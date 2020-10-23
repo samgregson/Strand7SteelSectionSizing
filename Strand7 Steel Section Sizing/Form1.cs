@@ -621,7 +621,7 @@ namespace Strand7_Steel_Section_Sizing
                 changed = 0;
                 double[] stressA = new double[nBeams];
                 stress_satisfied = true;
-                foreach (int i in iList) { NewSectArray[i] = 0; NewSectArray_def[i] = 0; }
+                foreach (int i in iList) { NewSectArray[i] = 0;}
 
                 #region calculate stresses (true and virtual)
                 if ((sCase == Solver.linear || sCase == Solver.nonlin) && !optDeflections)
@@ -650,11 +650,14 @@ namespace Strand7_Steel_Section_Sizing
                 }
                 else if (optDeflections) //average stress based for deflections
                 {
+
                     // virtual stresses
                     #region virtual stresses
 
                     double def_approx = def_max;
-                    int[] CurrentSectArray_temp = CurrentSectArray;
+                    int[] CurrentSectArray_temp = new int[nProps];
+                    CurrentSectArray.CopyTo(CurrentSectArray_temp,0);
+                    CurrentSectArray.CopyTo(NewSectArray, 0);
 
                     while (def_approx > def_limit)
                     {
@@ -709,8 +712,6 @@ namespace Strand7_Steel_Section_Sizing
 
                         def_approx += (group_def_new[property, section] - group_def_current[property]);
                     }
-                    MessageBox.Show(String.Format("def_approx = {0:0.0}mm", def_approx));
-
                     #endregion virtual stresses
                 }
                 else if (false) //average stress based for deflections
