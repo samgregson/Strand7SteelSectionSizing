@@ -656,14 +656,14 @@ namespace Strand7_Steel_Section_Sizing
                     double def_approx = def_max;
                     int[] CurrentSectArray_temp = CurrentSectArray;
 
-                    //while (def_approx > def_limit)
-                    //{
+                    while (def_approx > def_limit)
+                    {
                         double[] group_def_current = new double[nProps];
                         double[] group_mass_current = new double[nProps];
                         double[,] group_def_new = new double[nProps, nSections];
                         double[,] group_mass_new = new double[nProps, nSections];
                         double[,] group_efficiency = new double[nProps, nSections];
-                        double best_efficiency = double.PositiveInfinity;
+                        double best_efficiency = 0;
                         int[] ibest_efficiency = new int[2];
                         double total_mass = 0;
 
@@ -690,10 +690,10 @@ namespace Strand7_Steel_Section_Sizing
                             //Calc efficiencies
                             for (int s = 0; s < nSections; s++)
                             {
-                                group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
-
+                                if (group_mass_new[p, s] - group_mass_current[p] != 0) group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
+                                else group_efficiency[p, s] = 0;
                                 //Choose most efficient
-                                if (group_efficiency[p, s] < best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
+                                if (group_efficiency[p, s] > best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
                                 {
                                     best_efficiency = group_efficiency[p, s];
                                     ibest_efficiency = new int[] { p, s };
@@ -705,9 +705,11 @@ namespace Strand7_Steel_Section_Sizing
                         int section = ibest_efficiency[1];
                         NewSectArray_def[property] = section;
                         NewSectArray[property] = section;
+                        CurrentSectArray_temp[property] = section;
 
-                    //    def_approx += (group_def_new[property, section] - group_def_current[property]);
-                    //}
+                        def_approx += (group_def_new[property, section] - group_def_current[property]);
+                    }
+                    MessageBox.Show(String.Format("def_approx = {0:0.0}mm", def_approx));
 
                     #endregion virtual stresses
                 }
