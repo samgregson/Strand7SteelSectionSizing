@@ -664,9 +664,12 @@ namespace Strand7_Steel_Section_Sizing
                     double[,] group_def_new = new double[nProps, nSections];
                     double[,] group_mass_new = new double[nProps, nSections];
                     double[,] group_efficiency = new double[nProps, nSections];
-                    double best_efficiency = double.PositiveInfinity;
+                    double best_efficiency = 0;
                     int[] ibest_efficiency = new int[2];
                     double total_mass = 0;
+
+                    StringBuilder sb_efficiencies = new StringBuilder();
+                    string sOutPathEfficiencies = System.IO.Path.Combine(optFolder, "efficiencies.txt");
 
                     //Calc prop group current deflection and mass contributions
                     foreach (int p in iList)
@@ -678,36 +681,43 @@ namespace Strand7_Steel_Section_Sizing
                         {
                             group_def_current[p] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
                             group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
+                        }
+                        total_mass += group_mass_current[p];
 
-                            //Calc prop group new deflections and masses
-                            for (int s = 0; s < nSections; s++)
+                        //Calc prop group new deflections and masses
+                        for (int s = 0; s < nSections; s++)
+                        {
+                            foreach (int i in propList[p])
                             {
                                 group_def_new[p, s] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
                                 group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
                             }
                         }
-                        total_mass += group_mass_current[p];
+                    }
 
-                        //Calc efficiencies
+                    //Calc efficiencies
+                    foreach (int p in iList)
+                    {
                         for (int s = 0; s < nSections; s++)
                         {
-                            group_efficiency[p,s] = (group_def_new[p, s] - group_def_current[p]) / (group_mass_new[p, s]- group_mass_current[p]);
-                            
+                            if ((group_mass_new[p, s] - group_mass_current[p]) != 0) { group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]); }
+                            else { group_efficiency[p, s] = 0; } //avoids selecting the same section if available and getting stuck in a loop.
                             //Choose most efficient
-                            if (group_efficiency[p,s] < best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
+                            if (group_efficiency[p, s] > best_efficiency && group_def_new[p, s] < group_def_current[p])// && CurrentSectArray[p] != s)
                             {
                                 best_efficiency = group_efficiency[p, s];
                                 ibest_efficiency = new int[] { p, s };
                             }
                         }
                     }
-
+                    
                     int property = ibest_efficiency[0];
                     int section = ibest_efficiency[1];
                     NewSectArray_def[property] = section;
                     NewSectArray[property] = section;
 
-
+                    sb_efficiencies.Append(String.Format("Change property {0} from {1} to {2}, Efficiency = {3:0.00}, Deflection change = {4:0.00}mm, Mass change = {5:0}kg", new object[] { property, CurrentSectArray[property], section, best_efficiency, group_def_current[property] - group_def_new[property, section], 1000*(group_mass_new[property, section] - group_mass_current[property]) }));
+                    System.IO.File.AppendAllText(sOutPathEfficiencies, sb_efficiencies.ToString() + System.Environment.NewLine);
 
                     ////Calculate current deflection
                     //for (int i = 0; i < nBeams; i++)
@@ -927,8 +937,9 @@ namespace Strand7_Steel_Section_Sizing
                     }
                     else if ((NewSectArray[i] - CurrentSectArray[i]) < 0)
                     {
-                        if (iter < 15) inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;// DampingDown * (NewSectArray[i] - CurrentSectArray[i]);
-                        else inc[i] = 0;
+                        inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;
+                        //if (iter < 15) inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;// DampingDown * (NewSectArray[i] - CurrentSectArray[i]);
+                        //else inc[i] = 0;
                     }
                     else inc[i] = 0;
 
