@@ -88,8 +88,8 @@ namespace Strand7_Steel_Section_Sizing
             //#############################################
             double UtilMax = 0.99;
             double DesignStress = 355;//157.9;//355/1.1;
-            double DampingUp = 0.6;
-            double DampingDown = 0.4;
+            double DampingUp = 1.0;//0.6;
+            double DampingDown = 1.0;//0.4;
             int iter_max = 50;
 
             string sBaseFile = "";
@@ -228,7 +228,7 @@ namespace Strand7_Steel_Section_Sizing
             int virtual_case = 0;
 
             //set beams to biggest sections (to avoid instabilities)
-            foreach (int i in iList){ CurrentSectArray[i] = nSections-1; }
+            foreach (int i in iList){ CurrentSectArray[i] = 0; }
 
             if (worker.CancellationPending)
             {
@@ -659,6 +659,146 @@ namespace Strand7_Steel_Section_Sizing
                     double[] stressVirtual = new double[nBeams];
                     double[] deflectionVirtual = new double[nBeams];
 
+                    double[] group_def_current = new double[nProps];
+                    double[] group_mass_current = new double[nProps];
+                    double[,] group_def_new = new double[nProps, nSections];
+                    double[,] group_mass_new = new double[nProps, nSections];
+                    double[,] group_efficiency = new double[nProps, nSections];
+                    double best_efficiency = double.PositiveInfinity;
+                    int[] ibest_efficiency = new int[2];
+                    double total_mass = 0;
+
+                    //Calc prop group current deflection and mass contributions
+                    foreach (int p in iList)
+                    {
+                        int iSect = CurrentSectArray[p];
+                        NewSectArray[p] = iSect;
+
+                        foreach (int i in propList[p])
+                        {
+                            group_def_current[p] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                            group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
+
+                            //Calc prop group new deflections and masses
+                            for (int s = 0; s < nSections; s++)
+                            {
+                                group_def_new[p, s] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
+                                group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
+                            }
+                        }
+                        total_mass += group_mass_current[p];
+
+                        //Calc efficiencies
+                        for (int s = 0; s < nSections; s++)
+                        {
+                            group_efficiency[p,s] = (group_def_new[p, s] - group_def_current[p]) / (group_mass_new[p, s]- group_mass_current[p]);
+                            
+                            //Choose most efficient
+                            if (group_efficiency[p,s] < best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
+                            {
+                                best_efficiency = group_efficiency[p, s];
+                                ibest_efficiency = new int[] { p, s };
+                            }
+                        }
+                    }
+
+                    int property = ibest_efficiency[0];
+                    int section = ibest_efficiency[1];
+                    NewSectArray_def[property] = section;
+                    NewSectArray[property] = section;
+
+
+
+                    ////Calculate current deflection
+                    //for (int i = 0; i < nBeams; i++)
+                    //{
+                    //    int iSect = CurrentSectArray[PropMapping[i] - 1];
+                    //    deflectionVirtual[i] = Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                    //    total_deflection += deflectionVirtual[i];
+                    //}
+                    ////MessageBox.Show(String.Format("Predicted deflection: {0:0.00}mm, \nActual deflection: {1:0.00}mm",total_deflection,def_max));
+
+                    ////Calculate current stress average
+                    //foreach (int p in iList)
+                    //{
+                    //    foreach (int i in propList[p])
+                    //    {
+                    //        if (Eval_Beam[i])
+                    //        {
+                    //            int iSect = CurrentSectArray[p];
+                    //            stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                    //            stressAverage += stressVirtual[i];
+                    //        }
+                    //    }
+                    //}
+                    //stressAverage = stressAverage / nBeams;
+
+                    //for (int i = 0; i < nBeams; i++)
+                    //{
+                    //    sb_virtual.Append((i + 1).ToString() + " " + stressVirtual[i].ToString() + " " + stressVirtual[i].ToString() + "\n");
+                    //}
+
+                    ////choose new sections
+                    //for (int i = 0; i < nBeams; i++)
+                    //{
+                    //    if (Eval_Beam[i])
+                    //    {
+                    //        for (int j = 0; j < nSections; j++)
+                    //        {
+                    //            stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[j], I11[j], I22[j], BeamLength[i]);
+
+                    //            if (stressVirtual[i] < (stressAverage * Math.Pow(Factor, 1.5)))
+                    //            {
+                    //                NewSectArray_def[PropMapping[i] - 1] += j;
+                    //                break;
+                    //            }
+                    //            else if (j == (nSections - 1))
+                    //            {
+                    //                NewSectArray_def[PropMapping[i] - 1] += j;
+                    //                break;
+                    //            }
+                    //        }
+                    //    }
+                    //}
+                    //for (int p = 0; p < nProps; p++)
+                    //{
+                    //    if (Prop_Count[p] > 0)
+                    //    {
+                    //        NewSectArray_def[p] /= Prop_Count[p];
+                    //        NewSectArray[p] = Convert.ToInt32(NewSectArray_def[p]);
+                    //    }
+                    //}
+
+                    ////Calculate new stress average
+                    //for (int i = 0; i < nBeams; i++)
+                    //{
+                    //    if (Eval_Beam[i])
+                    //    {
+                    //        int iSect = NewSectArray[PropMapping[i] - 1];
+                    //        stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                    //        stressAverage += stressVirtual[i];
+                    //    }
+                    //}
+                    //stressAverage = stressAverage / nBeams;
+
+                    //for (int i = 0; i < nBeams; i++)
+                    //{
+                    //    sb_virtual.Append((i + 1).ToString() + " " + stressVirtual[i].ToString() + " " + stressVirtual[i].ToString() + "\n");
+                    //}
+
+                    #endregion virtual stresses
+                }
+                else if (false) //average stress based for deflections
+                {
+                    // virtual stresses
+                    #region virtual stresses
+                    double Factor = def_limit / def_max;
+
+                    double stressAverage = 0;
+                    double total_deflection = 0;
+                    double[] stressVirtual = new double[nBeams];
+                    double[] deflectionVirtual = new double[nBeams];
+
                     //Calculate current deflection
                     for (int i = 0; i < nBeams; i++)
                     {                       
@@ -667,16 +807,18 @@ namespace Strand7_Steel_Section_Sizing
                         total_deflection += deflectionVirtual[i];
                     }
                     //MessageBox.Show(String.Format("Predicted deflection: {0:0.00}mm, \nActual deflection: {1:0.00}mm",total_deflection,def_max));
-                    //Factor *= total_deflection / def_max;
 
                     //Calculate current stress average
-                    for (int i = 0; i < nBeams; i++)
+                    foreach (int p in iList)
                     {
-                        if (Eval_Beam[i])
+                        foreach (int i in propList[p])
                         {
-                            int iSect = CurrentSectArray[PropMapping[i] - 1];
-                            stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect],BeamLength[i]);
-                            stressAverage += stressVirtual[i];
+                            if (Eval_Beam[i])
+                            {
+                                int iSect = CurrentSectArray[p];
+                                stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                                stressAverage += stressVirtual[i];
+                            }
                         }
                     }
                     stressAverage = stressAverage / nBeams;
@@ -686,21 +828,6 @@ namespace Strand7_Steel_Section_Sizing
                         sb_virtual.Append((i+1).ToString() + " " +stressVirtual[i].ToString() + " " + stressVirtual[i].ToString() + "\n");
                     }
 
-                    double stressAverage_test = 0;
-                    foreach (int p in iList)
-                    {
-                        foreach (int i in propList[p])
-                        {
-                            if (Eval_Beam[i])
-                            {
-                                int iSect = CurrentSectArray[p];
-                                stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                                stressAverage_test += stressVirtual[i];
-                            }
-                        }
-                    }
-                    stressAverage = stressAverage / nBeams;
-                    
                     //choose new sections
                     for (int i = 0; i < nBeams; i++)
                     {
@@ -844,7 +971,7 @@ namespace Strand7_Steel_Section_Sizing
                     Environment.Exit(0);
                 }
 
-                if (looping) { DampingDown = 0.4; }
+                if (looping) { DampingDown = 1.0; }// 0.4; }
                 if (changed == 0)  { break; }
             }
             #endregion
