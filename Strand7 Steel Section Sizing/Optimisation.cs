@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
+using System.ComponentModel.Design;
 
 namespace Strand7_Steel_Section_Sizing
 {
@@ -43,18 +44,17 @@ namespace Strand7_Steel_Section_Sizing
             StringBuilder sb_virtual = new StringBuilder(100);
 
             //file paths
-            string sBaseFile = "";
-            sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), System.IO.Path.GetFileNameWithoutExtension(file));
+            string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), System.IO.Path.GetFileNameWithoutExtension(file));
             string optFolder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), "Optimisation results");
             System.IO.Directory.CreateDirectory(optFolder);
             string sOutPath = System.IO.Path.Combine(optFolder, "Section changes.txt");
             try { System.IO.File.Delete(sOutPath); }
             catch { }
-            string sSt7LSAPath = sBaseFile + " - optimised.LSA";
-            string sSt7NLAPath = sBaseFile + " - optimised.NLA";
-            string sSt7FreqPath = sBaseFile + " - optimised.NFA";
+            sSt7LSAPath = sBaseFile + " - optimised.LSA";
+            sSt7NLAPath = sBaseFile + " - optimised.NLA";
+            sSt7FreqPath = sBaseFile + " - optimised.NFA";
             string sSt7BucPath = sBaseFile + " - optimised.LBA";
-            string sSt7ResPath = "";
+            sSt7ResPath = "";
             string sSt7OptimisedPath = sBaseFile + " - optimised.st7";
 
             //Strand7 model properties
@@ -137,8 +137,6 @@ namespace Strand7_Steel_Section_Sizing
             stat3 = "";
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-            double[][] SectionDoubles = new double[nSections + 1][];
-            for (int i = 0; i < nSections; i++) { SectionDoubles[i] = new double[] { D1[i], D2[i], D3[i], T1[i], T2[i], T3[i] };}
             foreach (int i in iList)
             {
                 iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
@@ -228,9 +226,6 @@ namespace Strand7_Steel_Section_Sizing
                 if (changed > 0) { stat2 = changed.ToString() + " changes in previous iteration"; }
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-
-                //outer loop
-
                 //###################################
                 //####### Optimise Stresses #########
                 //###################################
@@ -241,14 +236,20 @@ namespace Strand7_Steel_Section_Sizing
                 ///     iterate
                 if (optStresses)
                 {
-                    for (int iter_stress = 0; iter_stress < 1; iter_stress++)
+                    for (int iter_stress = 0; iter_stress < 50; iter_stress++)
                     {
+                        if (iter_stress > 0 && changed == 0)
+                        {
+                            MessageBox.Show("No Changes!!");
+                            break;
+                        }
                         //run solver and open results file
                         stat2 = "running solver...";
-                        stat3 = "";
+                        stat3 = "stress iteration: " + iter_stress.ToString();
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                         int NumPrimary = new int();
                         int NumSecondary = new int();
+
                         RunSolver(sCase, ref NumPrimary, ref NumSecondary);
                         if (worker.CancellationPending)
                         {
@@ -340,6 +341,7 @@ namespace Strand7_Steel_Section_Sizing
                             e.Cancel = true;
                             return;
                         }
+
 
                         //choose sections
                         foreach (int p in iList) //loop through property groups
@@ -993,6 +995,9 @@ namespace Strand7_Steel_Section_Sizing
                 MessageBox.Show("No section properties found.");
                 return;
             }
+
+            SectionDoubles = new double[D1.Count + 1][];
+            for (int i = 0; i < D1.Count; i++) { SectionDoubles[i] = new double[] { D1[i], D2[i], D3[i], T1[i], T2[i], T3[i] }; }
         }
         private static void RunSolver(Solver sCase, ref int NumPrimary, ref int NumSecondary)
         {
