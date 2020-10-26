@@ -56,21 +56,21 @@ namespace Strand7_Steel_Section_Sizing
         }
         public void updatetext()
         {
-            //if (initialising)
-            //{
-            //    if (!timer1.Enabled)
-            //    {
-            //        timer1.Tick += new EventHandler(timer1_Tick);
-            //        timer1.Enabled = true;
-            //        timer1.Interval = 1000;
-            //        timer1.Start();
-            //    }
-            //}
-            //else
-            //{
-            //    timer1.Stop();
-            //    timer1.Enabled = false;
-            //}
+            if (initialising)
+            {
+                if (!timer1.Enabled)
+                {
+                    timer1.Tick += new EventHandler(timer1_Tick);
+                    timer1.Enabled = true;
+                    timer1.Interval = 1000;
+                    timer1.Start();
+                }
+            }
+            else
+            {
+                timer1.Stop();
+                timer1.Enabled = false;
+            }
             label1.Text = status;
             label1.Refresh();
             label2.Text = status2;

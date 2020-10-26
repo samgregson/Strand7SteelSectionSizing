@@ -21,23 +21,60 @@ namespace Strand7_Steel_Section_Sizing
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
             //#####################################################################################
 
-            //##########################################
-            //########### CODE GOES HERE ###############
-            //##########################################
-            List<object> args = (List<object>)e.Argument;
-            string file = (string)args[0];
-            List<int> iList = (List<int>)args[1];
-            List<int> ResList_stress = (List<int>)args[2];
-            Solver sCase = (Solver)args[3];
-            bool optDeflections = (bool)args[4];
-            List<int> ResList_def = (List<int>)args[5];
-            double def_limit = (double)args[6];
+            SetInputs(e);
+            CollectSections();
+            int nSections = D1.Count;
 
+            //#############################################
+            //############## Set constants ################
+            //#############################################
+            #region Set constants
+
+            //optimisation settings
+            double UtilMax = 0.99;
+            double DesignStress = 355;//157.9;//355/1.1;
+            double DampingUp = 1.0;//0.6;
+            double DampingDown = 1.0;//0.4;
+            int iter_max = 50;
+            int changed = 0;
+            bool stress_satisfied = true;
+
+            //string builders
+            StringBuilder sb = new StringBuilder(100);
+            StringBuilder sb_virtual = new StringBuilder(100);
+
+            //file paths
+            string sBaseFile = "";
+            sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), System.IO.Path.GetFileNameWithoutExtension(file));
+            string optFolder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), "Optimisation results");
+            System.IO.Directory.CreateDirectory(optFolder);
+            string sOutPath = System.IO.Path.Combine(optFolder, "Section changes.txt");
+            try { System.IO.File.Delete(sOutPath); }
+            catch { }
+            string sSt7LSAPath = sBaseFile + " - optimised.LSA";
+            string sSt7NLAPath = sBaseFile + " - optimised.NLA";
+            string sSt7FreqPath = sBaseFile + " - optimised.NFA";
+            string sSt7BucPath = sBaseFile + " - optimised.LBA";
+            string sSt7ResPath = "";
+            string sSt7OptimisedPath = sBaseFile + " - optimised.st7";
+
+            //Strand7 model properties
             int iErr;
             iErr = St7.St7Init();
             if (CheckiErr(iErr)) { return; }
             iErr = St7.St7OpenFile(1, file, System.IO.Path.GetTempPath());
             if (CheckiErr(iErr)) { return; };
+            int nBeams = new int();
+            int nNodes = new int();
+            iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
+            if (CheckiErr(iErr)) { return; };
+            iErr = St7.St7GetTotal(1, St7.tyNODE, ref nNodes);
+            if (CheckiErr(iErr)) { return; };
+            int[] NumProperties = new int[St7.kMaxEntityTotals];
+            int[] LastProperty = new int[St7.kMaxEntityTotals];
+            iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
+            if (CheckiErr(iErr)) { return; };
+            int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
 
             if (worker.CancellationPending)
             {
@@ -49,59 +86,17 @@ namespace Strand7_Steel_Section_Sizing
                 return;
             }
 
-            #region Set constants
-            //#############################################
-            //############## Set constants ################
-            //#############################################
-            double UtilMax = 0.99;
-            double DesignStress = 355;//157.9;//355/1.1;
-            double DampingUp = 1.0;//0.6;
-            double DampingDown = 1.0;//0.4;
-            int iter_max = 50;
-
-            string sBaseFile = "";
-            sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), System.IO.Path.GetFileNameWithoutExtension(file));
-
-            StringBuilder sb = new StringBuilder(100);
-            StringBuilder sb_virtual = new StringBuilder(100);
-
-            string optFolder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), "Optimisation results");
-            System.IO.Directory.CreateDirectory(optFolder);
-            string sOutPath = System.IO.Path.Combine(optFolder, "Section changes.txt");
-            try { System.IO.File.Delete(sOutPath); }
-            catch { }
-
-            string sSt7LSAPath = sBaseFile + " - optimised.LSA";
-            string sSt7NLAPath = sBaseFile + " - optimised.NLA";
-            string sSt7FreqPath = sBaseFile + " - optimised.NFA";
-            string sSt7BucPath = sBaseFile + " - optimised.LBA";
-            string sSt7ResPath = "";
-            string sSt7OptimisedPath = sBaseFile + " - optimised.st7";
-
-            int changed = 0;
-            bool stress_satisfied = true;
-
-            CollectSections();
-            int nSections = D1.Count;
-
-            int nBeams = new int();
-            int nNodes = new int();
-            iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
-            if (CheckiErr(iErr)) { return; };
-            iErr = St7.St7GetTotal(1, St7.tyNODE, ref nNodes);
-            if (CheckiErr(iErr)) { return; };
-
-            int[] NumProperties = new int[St7.kMaxEntityTotals];
-            int[] LastProperty = new int[St7.kMaxEntityTotals];
-            iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
-            if (CheckiErr(iErr)) { return; };
-            int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
-
             double[] BeamResults = new double[St7.kMaxBeamResult];
             double[] NodeResults = new double[St7.kMaxDisp];
             double[] A_x = new double[nBeams];
             double[] M_11 = new double[nBeams];
             double[] M_22 = new double[nBeams];
+            int[] CurrentSectArray = new int[nProps];
+            int[] NewSectArray = new int[nProps];
+            double[] NewSectArray_def = new double[nProps];
+            double[] inc = new double[nProps];
+            double[] incPrev = new double[nProps];
+            int virtual_case = 0;
 
             if (nProps < 1)
             {
@@ -126,13 +121,6 @@ namespace Strand7_Steel_Section_Sizing
                 iList[i] = iList[i] - 1;
             }
 
-            int[] CurrentSectArray = new int[nProps];
-            int[] NewSectArray = new int[nProps];
-            double[] NewSectArray_def = new double[nProps];
-            double[] inc = new double[nProps];
-            double[] incPrev = new double[nProps];
-            int virtual_case = 0;
-
             //set beams to biggest sections (to avoid instabilities)
             foreach (int i in iList) { CurrentSectArray[i] = 0; }
 
@@ -151,14 +139,7 @@ namespace Strand7_Steel_Section_Sizing
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
             double[][] SectionDoubles = new double[nSections + 1][];
-            for (int i = 0; i < nSections; i++)
-            {
-                stat2 = "setting property " + i.ToString();
-                stat3 = "";
-                worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                SectionDoubles[i] = new double[] { D1[i], D2[i], D3[i], T1[i], T2[i], T3[i] };
-            }
-
+            for (int i = 0; i < nSections; i++) { SectionDoubles[i] = new double[] { D1[i], D2[i], D3[i], T1[i], T2[i], T3[i] };}
             foreach (int i in iList)
             {
                 iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
@@ -221,11 +202,6 @@ namespace Strand7_Steel_Section_Sizing
                 return;
             }
 
-            #region LOOP
-            //################################
-            //########### LOOP ###############
-            //################################
-
             int[] units = new int[] { St7.luMILLIMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
             iErr = St7.St7ConvertUnits(1, units);
             if (CheckiErr(iErr)) { return; };
@@ -234,17 +210,33 @@ namespace Strand7_Steel_Section_Sizing
 
             init = false;
 
+            //####################################
+            //############## Loop ################
+            //####################################
+            #region LOOP
             for (int iter = 1; iter < iter_max; iter++)
             {
                 string sOutPathVirtualStresses = System.IO.Path.Combine(optFolder, "virtual stresses" + iter.ToString() + ".txt");
                 sb_virtual.Append("TITLE Virtual stresses\n");
-
                 bool looping = true;
                 stat = "Iteration: " + iter.ToString();
                 stat2 = "";
                 stat3 = Environment.NewLine + "ITERATION: " + iter.ToString(); ;
                 if (changed > 0) { stat2 = changed.ToString() + " changes in previous iteration"; }
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+
+                //outer loop
+
+                //optimise stresses loop
+
+                //optimise deflections loop
+
+
+
+
+
+
 
                 #region Analyse and Collect Results
                 //#############################################
@@ -834,6 +826,8 @@ namespace Strand7_Steel_Section_Sizing
             }
             #endregion
 
+            //#####################################################################################
+
             //Set Property names:
             foreach (int i in iList)
             {
@@ -850,7 +844,6 @@ namespace Strand7_Steel_Section_Sizing
             iErr = St7.St7Release();
             if (CheckiErr(iErr)) { return; };
 
-            //#####################################################################################
             stat = "complete";
             stat2 = "";
             stat3 = Environment.NewLine + "Optimisation completed at: " + DateTime.Now;
@@ -861,7 +854,17 @@ namespace Strand7_Steel_Section_Sizing
             else if (changed == 0) { MessageBox.Show("Section sizing has converged!"); }
             else { MessageBox.Show("Section sizing has NOT converged. Maximum number of iterations reached."); }
         }
-
+        static void SetInputs(DoWorkEventArgs e)
+        {
+            List<object> args = (List<object>)e.Argument;
+            file = (string)args[0];
+            iList = (List<int>)args[1];
+            ResList_stress = (List<int>)args[2];
+            sCase = (Solver)args[3];
+            optDeflections = (bool)args[4];
+            ResList_def = (List<int>)args[5];
+            def_limit = (double)args[6];
+        }
         private static void CollectSections()
         {
             int iErr;
@@ -944,6 +947,7 @@ namespace Strand7_Steel_Section_Sizing
             return false;
         }
 
+        #region variables
         private static List<double> A = new List<double>();
         private static List<double> D1 = new List<double>();
         private static List<double> D2 = new List<double>();
@@ -966,6 +970,6 @@ namespace Strand7_Steel_Section_Sizing
         private static double def_limit = new double();
 
         public enum Solver { linear, nonlin, frequency }
-
+        #endregion
     }
 }
