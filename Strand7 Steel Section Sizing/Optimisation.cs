@@ -33,11 +33,10 @@ namespace Strand7_Steel_Section_Sizing
             //optimisation settings
             double UtilMax = 0.99;
             double DesignStress = 355;//157.9;//355/1.1;
-            double DampingUp = 1.0;//0.6;
-            double DampingDown = 1.0;//0.4;
+            DampingUp = 1.0;//0.6;
+            DampingDown = 1.0;//0.4;
             int iter_max = 50;
-            int changed = 0;
-            bool stress_satisfied = true;
+            changed = 0;
 
             //string builders
             StringBuilder sb = new StringBuilder(100);
@@ -209,16 +208,20 @@ namespace Strand7_Steel_Section_Sizing
             if (CheckiErr(iErr)) { return; };
 
             init = false;
+            bool stress_satisfied = true;
+            bool deflection_satisfied = true;
 
             //####################################
             //############## Loop ################
             //####################################
-            #region LOOP
             for (int iter = 1; iter < iter_max; iter++)
             {
+                stress_satisfied = true;
+                deflection_satisfied = true;
+
                 string sOutPathVirtualStresses = System.IO.Path.Combine(optFolder, "virtual stresses" + iter.ToString() + ".txt");
                 sb_virtual.Append("TITLE Virtual stresses\n");
-                bool looping = true;
+                looping = true;
                 stat = "Iteration: " + iter.ToString();
                 stat2 = "";
                 stat3 = Environment.NewLine + "ITERATION: " + iter.ToString(); ;
@@ -228,11 +231,282 @@ namespace Strand7_Steel_Section_Sizing
 
                 //outer loop
 
-                //optimise stresses loop
+                //###################################
+                //####### Optimise Stresses #########
+                //###################################
+                ///optimise stresses loop
+                ///     run solver - DONE
+                ///     collect results - DONE
+                ///     choose sections
+                ///     iterate
+                if (optStresses)
+                {
+                    for (int iter_stress = 0; iter_stress < 1; iter_stress++)
+                    {
+                        //run solver and open results file
+                        stat2 = "running solver...";
+                        stat3 = "";
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                        int NumPrimary = new int();
+                        int NumSecondary = new int();
+                        RunSolver(sCase, ref NumPrimary, ref NumSecondary);
+                        if (worker.CancellationPending)
+                        {
+                            iErr = St7.St7CloseFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7Release();
+                            if (CheckiErr(iErr)) { return; };
+                            e.Cancel = true;
+                            return;
+                        }
 
+                        //set up load cases
+                        if (iter == 1)
+                        {
+                            if (ResList_stress.Count == 0)
+                            {
+                                for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_stress.Add(i);
+                            }
+                            if (ResList_def.Count == 0)
+                            {
+                                for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_def.Add(i);
+                            }
+                            if (optDeflections)
+                            {
+                                //add 1 to cases as virtual load case will be created
+                                for (int i = 0; i < ResList_stress.Count; i++)
+                                {
+                                    if (ResList_stress[i] > NumPrimary)
+                                    { ResList_stress[i]++; }
+                                }
+                                for (int i = 0; i < ResList_def.Count; i++)
+                                {
+                                    if (ResList_def[i] > NumPrimary)
+                                    { ResList_def[i]++; }
+                                }
+                                iErr = St7.St7NewLoadCase(1, "Virtual Load");
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7GetNumLoadCase(1, ref virtual_case);
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7EnableLoadCase(1, virtual_case);
+                                if (CheckiErr(iErr)) { return; };
+                            }
+                        }
+
+                        //collect results
+                        foreach (int ResCase in ResList_stress)
+                        {
+                            stat2 = "collecting stress results for case no " + ResCase.ToString() + "...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                            foreach (int p in iList) //loop through properties
+                            {
+                                foreach (int i in propList[p])
+                                {
+                                    int NumPoints = 0;
+                                    int NumColumns = 0;
+                                    double[] BeamPos = new double[St7.kMaxBeamResult];
+                                    iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                    if (CheckiErr(iErr)) { return; };
+                                    double A_x_max = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                                    double M_11_max = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                                    double M_22_max = Math.Abs(BeamResults[St7.ipBeamBM1]);
+
+                                    for (int j = 1; j < NumPoints; j++)
+                                    {
+                                        double A_x_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                                        double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                        double M_22_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                        if (A_x_max_j > A_x_max) { A_x_max = A_x_max_j; }
+                                        if (M_11_max_j > M_11_max) { M_11_max = M_11_max_j; }
+                                        if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
+                                    }
+
+                                    A_x[i] = Math.Max(A_x_max, A_x[i]);
+                                    M_11[i] = Math.Max(M_11_max, M_11[i]);
+                                    M_22[i] = Math.Max(M_22_max, M_22[i]);
+                                }
+                            }
+                        }
+                        iErr = St7.St7CloseResultFile(1);
+                        if (CheckiErr(iErr)) { return; };
+                        if (worker.CancellationPending)
+                        {
+                            iErr = St7.St7CloseFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7Release();
+                            if (CheckiErr(iErr)) { return; };
+                            e.Cancel = true;
+                            return;
+                        }
+
+                        //choose sections
+                        foreach (int p in iList) //loop through property groups
+                        {
+                            foreach (int i in propList[p]) //loop through beams in each property list
+                            {
+                                for (int s = NewSectArray[p]; s < nSections; s++) //find minimum weight that satisfies strength constraint
+                                {
+                                    double stress = Stress(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[s], Z11[s], Z22[s]);
+                                    if (stress < UtilMax * DesignStress)
+                                    {
+                                        NewSectArray[p] = s;
+                                        break;
+                                    }
+                                    else if (s == (nSections - 1))
+                                    {
+                                        NewSectArray[p] = s;
+                                        if (stress > UtilMax * DesignStress) stress_satisfied = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        //update sections
+                        UpdateSections(CurrentSectArray, NewSectArray, incPrev, inc);
+                    }
+                }
+
+
+                //######################################
+                //####### Optimise Deflections #########
+                //######################################
                 //optimise deflections loop
+                ///     run solver
+                ///     collect results
+                ///     choose sections
+                ///     iterate
+                if (optDeflections)
+                {
+                    for (int iter_deflections = 0; iter_deflections < 1; iter_deflections++)
+                    {
+                        //run solver and open results file
+                        stat2 = "running solver...";
+                        stat3 = "";
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                        int NumPrimary = new int();
+                        int NumSecondary = new int();
+                        RunSolver(sCase, ref NumPrimary, ref NumSecondary);
+                        if (worker.CancellationPending)
+                        {
+                            iErr = St7.St7CloseFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7Release();
+                            if (CheckiErr(iErr)) { return; };
+                            e.Cancel = true;
+                            return;
+                        }
 
+                        //set up load cases
+                        if (iter == 1)
+                        {
+                            if (ResList_stress.Count == 0)
+                            {
+                                for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_stress.Add(i);
+                            }
+                            if (ResList_def.Count == 0)
+                            {
+                                for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_def.Add(i);
+                            }
+                            if (optDeflections)
+                            {
+                                //add 1 to cases as virtual load case will be created
+                                for (int i = 0; i < ResList_stress.Count; i++)
+                                {
+                                    if (ResList_stress[i] > NumPrimary)
+                                    { ResList_stress[i]++; }
+                                }
+                                for (int i = 0; i < ResList_def.Count; i++)
+                                {
+                                    if (ResList_def[i] > NumPrimary)
+                                    { ResList_def[i]++; }
+                                }
+                                iErr = St7.St7NewLoadCase(1, "Virtual Load");
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7GetNumLoadCase(1, ref virtual_case);
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7EnableLoadCase(1, virtual_case);
+                                if (CheckiErr(iErr)) { return; };
+                            }
+                        }
 
+                        //collect results
+                        foreach (int ResCase in ResList_stress)
+                        {
+                            stat2 = "collecting stress results for case no " + ResCase.ToString() + "...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                            foreach (int p in iList) //loop through properties
+                            {
+                                foreach (int i in propList[p])
+                                {
+                                    int NumPoints = 0;
+                                    int NumColumns = 0;
+                                    double[] BeamPos = new double[St7.kMaxBeamResult];
+                                    iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                    if (CheckiErr(iErr)) { return; };
+                                    double A_x_max = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                                    double M_11_max = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                                    double M_22_max = Math.Abs(BeamResults[St7.ipBeamBM1]);
+
+                                    for (int j = 1; j < NumPoints; j++)
+                                    {
+                                        double A_x_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                                        double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                        double M_22_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                        if (A_x_max_j > A_x_max) { A_x_max = A_x_max_j; }
+                                        if (M_11_max_j > M_11_max) { M_11_max = M_11_max_j; }
+                                        if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
+                                    }
+
+                                    A_x[i] = Math.Max(A_x_max, A_x[i]);
+                                    M_11[i] = Math.Max(M_11_max, M_11[i]);
+                                    M_22[i] = Math.Max(M_22_max, M_22[i]);
+                                }
+                            }
+                        }
+                        iErr = St7.St7CloseResultFile(1);
+                        if (CheckiErr(iErr)) { return; };
+                        if (worker.CancellationPending)
+                        {
+                            iErr = St7.St7CloseFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7Release();
+                            if (CheckiErr(iErr)) { return; };
+                            e.Cancel = true;
+                            return;
+                        }
+
+                        //choose sections
+                        foreach (int p in iList) //loop through property groups
+                        {
+                            foreach (int i in propList[p]) //loop through beams in each property list
+                            {
+                                for (int s = NewSectArray[p]; s < nSections; s++) //find minimum weight that satisfies strength constraint
+                                {
+                                    double stress = Stress(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[s], Z11[s], Z22[s]);
+                                    if (stress < UtilMax * DesignStress)
+                                    {
+                                        NewSectArray[p] = s;
+                                        break;
+                                    }
+                                    else if (s == (nSections - 1))
+                                    {
+                                        NewSectArray[p] = s;
+                                        if (stress > UtilMax * DesignStress) stress_satisfied = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        //update sections
+                        UpdateSections(CurrentSectArray, NewSectArray, incPrev, inc);
+                    }
+                }
 
 
 
@@ -243,277 +517,216 @@ namespace Strand7_Steel_Section_Sizing
                 //####### Analyse and Collect results #########
                 //#############################################
 
-                double[] BeamPos = new double[St7.kMaxBeamResult];
-                int NumPrimary = new int();
-                int NumSecondary = new int();
-                double Freq = 0;
-                double FreqReq = 5;
+                //double Freq = 0;
+                //double FreqReq = 5;
 
-                stat2 = "running solver...";
-                stat3 = "";
-                worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //stat2 = "running solver...";
+                //stat3 = "";
+                //worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                switch (sCase)
-                {
-                    case Solver.linear:
-                        iErr = St7.St7SetResultFileName(1, sSt7LSAPath);
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7RunSolver(1, St7.stLinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
-                        if (CheckiErr(iErr)) { return; };
-                        sSt7ResPath = sSt7LSAPath;
-                        break;
-                    case Solver.nonlin:
-                        iErr = St7.St7SetResultFileName(1, sSt7NLAPath);
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7RunSolver(1, St7.stNonlinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
-                        if (CheckiErr(iErr)) { return; };
-                        sSt7ResPath = sSt7NLAPath;
-                        break;
-                    case Solver.frequency:
-                        iErr = St7.St7SetResultFileName(1, sSt7FreqPath);
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smProgressRun, St7.btTrue);
-                        if (CheckiErr(iErr)) { return; };
+                //RunSolver(sCase, ref NumPrimary, ref NumSecondary);
 
-                        sSt7ResPath = sSt7FreqPath;
-                        iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
-                        if (CheckiErr(iErr)) { return; };
+                //double def_max = 0;
+                //int def_node = 0;
+                //int def_case = 0;
+                //bool def_exceeded = false;
 
-                        double[] ModalRes = new double[10];
-                        iErr = St7.St7GetModalResultsNFA(1, 1, ModalRes);
-                        Freq = ModalRes[0];
+                ////Collect beam stresses
+                //if (!optDeflections)
+                //{
+                //    //reset variables
+                //    for (int i = 0; i < nBeams; i++)
+                //    {
+                //        A_x[i] = 0;
+                //        M_11[i] = 0;
+                //        M_22[i] = 0;
+                //    }
 
-                        iErr = St7.St7CloseResultFile(1);
-                        if (CheckiErr(iErr)) { return; };
-                        break;
-                }
+                //    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+                //    if (CheckiErr(iErr)) { return; };
 
-                if (iter == 1)
-                {
-                    if (ResList_stress.Count == 0)
-                    {
-                        for (int i = 1; i < NumPrimary + NumSecondary; i++)
-                        {
-                            ResList_stress.Add(i);
-                        }
-                    }
-                    if (ResList_def.Count == 0)
-                    {
-                        for (int i = 1; i < NumPrimary + NumSecondary; i++)
-                        {
-                            ResList_def.Add(i);
-                        }
-                    }
-                    if (optDeflections)
-                    {
-                        iErr = St7.St7NewLoadCase(1, "Virtual Load");
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7GetNumLoadCase(1, ref virtual_case);
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7EnableLoadCase(1, virtual_case);
-                        if (CheckiErr(iErr)) { return; };
-                    }
-                }
+                //    foreach (int ResCase in ResList_stress)
+                //    {
+                //        stat2 = "collecting stress results for case no " + ResCase.ToString() +"...";
+                //        stat3 = "";
+                //        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                double def_max = 0;
-                int def_node = 0;
-                int def_case = 0;
-                bool def_exceeded = false;
+                //        for (int i = 0; i < nBeams; i++)
+                //        {
+                //            if (Eval_Beam[i])
+                //            {
+                //                int NumPoints = 0;
+                //                int NumColumns = 0;
+                //                double[] BeamPos = new double[St7.kMaxBeamResult];
+                //                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                //                if (CheckiErr(iErr)) { return; };
+                //                double A_x_max = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                //                double M_11_max = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                //                double M_22_max = Math.Abs(BeamResults[St7.ipBeamBM1]);
 
-                //Collect beam stresses
-                if (!optDeflections)
-                {
-                    //reset variables
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        A_x[i] = 0;
-                        M_11[i] = 0;
-                        M_22[i] = 0;
-                    }
+                //                for (int j = 1; j < NumPoints; j++)
+                //                {
+                //                    double A_x_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                //                    double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                //                    double M_22_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                //                    if (A_x_max_j > A_x_max) { A_x_max = A_x_max_j; }
+                //                    if (M_11_max_j > M_11_max) { M_11_max = M_11_max_j; }
+                //                    if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
+                //                }
 
-                    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
-                    if (CheckiErr(iErr)) { return; };
+                //                A_x[i] = Math.Max(A_x_max, A_x[i]);
+                //                M_11[i] = Math.Max(M_11_max, M_11[i]);
+                //                M_22[i] = Math.Max(M_22_max, M_22[i]);
 
-                    foreach (int ResCase in ResList_stress)
-                    {
-                        stat2 = "collecting stress results for case no " + ResCase.ToString() +"...";
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //                //iErr = St7.St7GetBeamResultArray(1, St7.rtBeamDisp, St7.stBeamLocal, i + 1, 3, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                //            }
+                //        }
+                //    }
+                //    iErr = St7.St7CloseResultFile(1);
+                //    if (CheckiErr(iErr)) { return; };
+                //}
 
-                        for (int i = 0; i < nBeams; i++)
-                        {
-                            if (Eval_Beam[i])
-                            {
-                                int NumPoints = 0;
-                                int NumColumns = 0;
-                                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
-                                if (CheckiErr(iErr)) { return; };
-                                double A_x_max = Math.Abs(BeamResults[St7.ipBeamAxialF]);
-                                double M_11_max = Math.Abs(BeamResults[St7.ipBeamBM2]);
-                                double M_22_max = Math.Abs(BeamResults[St7.ipBeamBM1]);
+                ////Collect beam virtual stresses
+                //if (optDeflections)
+                //{
+                //    double[] virtual_load = new double[3];
 
-                                for (int j = 1; j < NumPoints; j++)
-                                {
-                                    double A_x_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
-                                    double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
-                                    double M_22_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
-                                    if (A_x_max_j > A_x_max) { A_x_max = A_x_max_j; }
-                                    if (M_11_max_j > M_11_max) { M_11_max = M_11_max_j; }
-                                    if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
-                                }
+                //    //collect worst case deflections
+                //    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+                //    if (CheckiErr(iErr)) { return; };
+                //    foreach (int ResCase in ResList_def)
+                //    {
+                //        stat2 = "collecting deflection results for case no " + ResCase.ToString();
+                //        stat3 = "";
+                //        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                                A_x[i] = Math.Max(A_x_max, A_x[i]);
-                                M_11[i] = Math.Max(M_11_max, M_11[i]);
-                                M_22[i] = Math.Max(M_22_max, M_22[i]);
+                //        for (int i = 0; i < nNodes; i++)
+                //        {
+                //            iErr = St7.St7GetNodeResult(1, St7.rtNodeDisp, i + 1, ResCase, NodeResults);
+                //            if (CheckiErr(iErr)) { return; };
 
-                                //iErr = St7.St7GetBeamResultArray(1, St7.rtBeamDisp, St7.stBeamLocal, i + 1, 3, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
-                            }
-                        }
-                    }
-                    iErr = St7.St7CloseResultFile(1);
-                    if (CheckiErr(iErr)) { return; };
-                }
+                //            double dx = NodeResults[0];
+                //            double dy = NodeResults[1];
+                //            double dz = NodeResults[2];
+                //            double def = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                //            if (def > def_max)
+                //            {
+                //                def_max = def;
+                //                def_node = i + 1;
+                //                def_case = ResCase;
+                //                virtual_load[0] = dx / def;
+                //                virtual_load[1] = dy / def;
+                //                virtual_load[2] = dz / def;
+                //            }
+                //        }
+                //        stat2 = String.Format("max displacement is: {0:0.0}mm, \nload case number: {1}", def_max, def_case);
+                //        stat3 = stat2;
+                //        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //    }
+                //    iErr = St7.St7CloseResultFile(1);
+                //    if (CheckiErr(iErr)) { return; };
 
-                //Collect beam virtual stresses
-                if (optDeflections)
-                {
-                    double[] virtual_load = new double[3];
+                //    //check if deflection limit exceeded
+                //    if (def_max > def_limit) { def_exceeded = true; }
 
-                    //collect worst case deflections
-                    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
-                    if (CheckiErr(iErr)) { return; };
-                    foreach (int ResCase in ResList_def)
-                    {
-                        stat2 = "collecting deflection results for case no " + ResCase.ToString();
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //    //apply unit force to worst case node
+                //    iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, virtual_load);
+                //    if (CheckiErr(iErr)) { return; };
 
-                        for (int i = 0; i < nNodes; i++)
-                        {
-                            iErr = St7.St7GetNodeResult(1, St7.rtNodeDisp, i + 1, ResCase, NodeResults);
-                            if (CheckiErr(iErr)) { return; };
+                //    stat2 = "running solver...";
+                //    stat3 = "";
+                //    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                            double dx = NodeResults[0];
-                            double dy = NodeResults[1];
-                            double dz = NodeResults[2];
-                            double def = Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                            if (def > def_max)
-                            {
-                                def_max = def;
-                                def_node = i + 1;
-                                def_case = ResCase;
-                                virtual_load[0] = dx / def;
-                                virtual_load[1] = dy / def;
-                                virtual_load[2] = dz / def;
-                            }
-                        }
-                        stat2 = String.Format("max displacement is: {0:0.0}mm, \nload case number: {1}", def_max, def_case);
-                        stat3 = stat2;
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                    }
-                    iErr = St7.St7CloseResultFile(1);
-                    if (CheckiErr(iErr)) { return; };
+                //    //re-run solver
+                //    switch (sCase)
+                //    {
+                //        case Solver.linear:
+                //            iErr = St7.St7SetResultFileName(1, sSt7LSAPath);
+                //            if (CheckiErr(iErr)) { return; };
+                //            iErr = St7.St7RunSolver(1, St7.stLinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
+                //            if (CheckiErr(iErr)) { return; };
+                //            sSt7ResPath = sSt7LSAPath;
+                //            break;
+                //        case Solver.nonlin:
+                //            iErr = St7.St7SetResultFileName(1, sSt7NLAPath);
+                //            if (CheckiErr(iErr)) { return; };
+                //            iErr = St7.St7RunSolver(1, St7.stNonlinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
+                //            if (CheckiErr(iErr)) { return; };
+                //            sSt7ResPath = sSt7NLAPath;
+                //            break;
+                //        case Solver.frequency:
+                //            iErr = St7.St7SetResultFileName(1, sSt7FreqPath);
+                //            if (CheckiErr(iErr)) { return; };
+                //            iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smProgressRun, St7.btTrue);
+                //            if (CheckiErr(iErr)) { return; };
 
-                    //check if deflection limit exceeded
-                    if (def_max > def_limit) { def_exceeded = true; }
+                //            sSt7ResPath = sSt7FreqPath;
+                //            iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+                //            if (CheckiErr(iErr)) { return; };
 
-                    //apply unit force to worst case node
-                    iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, virtual_load);
-                    if (CheckiErr(iErr)) { return; };
+                //            double[] ModalRes = new double[10];
+                //            iErr = St7.St7GetModalResultsNFA(1, 1, ModalRes);
+                //            Freq = ModalRes[0];
 
-                    stat2 = "running solver...";
-                    stat3 = "";
-                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //            iErr = St7.St7CloseResultFile(1);
+                //            if (CheckiErr(iErr)) { return; };
+                //            break;
+                //    }
 
-                    //re-run solver
-                    switch (sCase)
-                    {
-                        case Solver.linear:
-                            iErr = St7.St7SetResultFileName(1, sSt7LSAPath);
-                            if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7RunSolver(1, St7.stLinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
-                            if (CheckiErr(iErr)) { return; };
-                            sSt7ResPath = sSt7LSAPath;
-                            break;
-                        case Solver.nonlin:
-                            iErr = St7.St7SetResultFileName(1, sSt7NLAPath);
-                            if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7RunSolver(1, St7.stNonlinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
-                            if (CheckiErr(iErr)) { return; };
-                            sSt7ResPath = sSt7NLAPath;
-                            break;
-                        case Solver.frequency:
-                            iErr = St7.St7SetResultFileName(1, sSt7FreqPath);
-                            if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smProgressRun, St7.btTrue);
-                            if (CheckiErr(iErr)) { return; };
+                //    //delete unit force on worst case node
+                //    iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, new double[] { 0, 0, 0 });
+                //    if (CheckiErr(iErr)) { return; };
 
-                            sSt7ResPath = sSt7FreqPath;
-                            iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
-                            if (CheckiErr(iErr)) { return; };
+                //    //collect beam results
+                //    int[] ResList_virtual = new int[] { def_case, virtual_case };
+                //    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+                //    if (CheckiErr(iErr)) { return; };
 
-                            double[] ModalRes = new double[10];
-                            iErr = St7.St7GetModalResultsNFA(1, 1, ModalRes);
-                            Freq = ModalRes[0];
+                //    //reset variables
+                //    for (int i = 0; i < nBeams; i++)
+                //    {
+                //        A_x[i] = 1;
+                //        M_11[i] = 1;
+                //        M_22[i] = 1;
+                //    }
 
-                            iErr = St7.St7CloseResultFile(1);
-                            if (CheckiErr(iErr)) { return; };
-                            break;
-                    }
+                //    foreach (int ResCase in ResList_virtual)
+                //    {
+                //        stat2 = "collecting virtual results for case no " + ResCase.ToString();
+                //        stat3 = "";
+                //        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                    //delete unit force on worst case node
-                    iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, new double[] { 0, 0, 0 });
-                    if (CheckiErr(iErr)) { return; };
+                //        for (int i = 0; i < nBeams; i++)
+                //        {
+                //            if (Eval_Beam[i])
+                //            {
+                //                int NumPoints = 0;
+                //                int NumColumns = 0;
+                //                double[] BeamPos = new double[St7.kMaxBeamResult];
+                //                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 8, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                //                if (CheckiErr(iErr)) { return; };
+                //                double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                //                double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                //                double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
 
-                    //collect beam results
-                    int[] ResList_virtual = new int[] { def_case, virtual_case };
-                    iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
-                    if (CheckiErr(iErr)) { return; };
+                //                for (int j = 1; j < NumPoints; j++)
+                //                {
+                //                    A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                //                    M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                //                    M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                //                }
 
-                    //reset variables
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        A_x[i] = 1;
-                        M_11[i] = 1;
-                        M_22[i] = 1;
-                    }
+                //                //Multiply for sensitivity
+                //                A_x[i] *= (A_x_addition / NumPoints);
+                //                M_11[i] *= (M_11_addition / NumPoints);
+                //                M_22[i] *= (M_22_addition / NumPoints);
+                //            }
+                //        }
+                //    }
 
-                    foreach (int ResCase in ResList_virtual)
-                    {
-                        stat2 = "collecting virtual results for case no " + ResCase.ToString();
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-
-                        for (int i = 0; i < nBeams; i++)
-                        {
-                            if (Eval_Beam[i])
-                            {
-                                int NumPoints = 0;
-                                int NumColumns = 0;
-                                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 8, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
-                                if (CheckiErr(iErr)) { return; };
-                                double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
-                                double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
-                                double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
-
-                                for (int j = 1; j < NumPoints; j++)
-                                {
-                                    A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
-                                    M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
-                                    M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
-                                }
-
-                                //Multiply for sensitivity
-                                A_x[i] *= (A_x_addition / NumPoints);
-                                M_11[i] *= (M_11_addition / NumPoints);
-                                M_22[i] *= (M_22_addition / NumPoints);
-                            }
-                        }
-                    }
-
-                    iErr = St7.St7CloseResultFile(1);
-                    if (CheckiErr(iErr)) { return; };
-                }
+                //    iErr = St7.St7CloseResultFile(1);
+                //    if (CheckiErr(iErr)) { return; };
+                //}
                 #endregion
 
                 if (worker.CancellationPending)
@@ -523,286 +736,158 @@ namespace Strand7_Steel_Section_Sizing
                     iErr = St7.St7Release();
                     if (CheckiErr(iErr)) { return; };
                     e.Cancel = true;
-                    //Environment.Exit(0);
                     return;
                 }
 
                 #region Set best section
-                //##################################
-                //####### Set best section #########
-                //##################################
+                ////##################################
+                ////####### Set best section #########
+                ////##################################
 
-                changed = 0;
-                double[] stressA = new double[nBeams];
-                stress_satisfied = true;
-                foreach (int i in iList) { NewSectArray[i] = 0; }
+                //changed = 0;
+                //double[] stressA = new double[nBeams];
+                //stress_satisfied = true;
+                //foreach (int i in iList) { NewSectArray[i] = 0; }
 
-                #region calculate stresses (true and virtual)
-                if ((sCase == Solver.linear || sCase == Solver.nonlin) && !optDeflections)
-                {
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        if (Eval_Beam[i])
-                        {
-                            for (int j = NewSectArray[PropMapping[i] - 1]; j < nSections; j++)
-                            {
-                                stressA[i] = A_x[i] / A[j] + M_11[i] / Z11[j] + M_22[i] / Z22[j];
-                                if (stressA[i] < UtilMax * DesignStress)
-                                {
-                                    NewSectArray[PropMapping[i] - 1] = j;
-                                    break;
-                                }
-                                else if (j == (nSections - 1))
-                                {
-                                    NewSectArray[PropMapping[i] - 1] = j;
-                                    if (stressA[i] > UtilMax * DesignStress) stress_satisfied = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (optDeflections) //average stress based for deflections
-                {
-                    // virtual stresses
-                    #region virtual stresses
+                //#region calculate stresses (true and virtual)
+                //if ((sCase == Solver.linear || sCase == Solver.nonlin) && !optDeflections)
+                //{
+                //    for (int i = 0; i < nBeams; i++)
+                //    {
+                //        if (Eval_Beam[i])
+                //        {
+                //            for (int j = NewSectArray[PropMapping[i] - 1]; j < nSections; j++)
+                //            {
+                //                stressA[i] = A_x[i] / A[j] + M_11[i] / Z11[j] + M_22[i] / Z22[j];
+                //                if (stressA[i] < UtilMax * DesignStress)
+                //                {
+                //                    NewSectArray[PropMapping[i] - 1] = j;
+                //                    break;
+                //                }
+                //                else if (j == (nSections - 1))
+                //                {
+                //                    NewSectArray[PropMapping[i] - 1] = j;
+                //                    if (stressA[i] > UtilMax * DesignStress) stress_satisfied = false;
+                //                    break;
+                //                }
+                //            }
+                //        }
+                //    }
+                //}
+                //else if (optDeflections) //average stress based for deflections
+                //{
+                //    // virtual stresses
+                //    #region virtual stresses
 
-                    double def_approx = def_max;
-                    int[] CurrentSectArray_temp = new int[nProps];
-                    CurrentSectArray.CopyTo(CurrentSectArray_temp, 0);
-                    CurrentSectArray.CopyTo(NewSectArray, 0);
-                    double total_mass = 0;
+                //    double def_approx = def_max;
+                //    int[] CurrentSectArray_temp = new int[nProps];
+                //    CurrentSectArray.CopyTo(CurrentSectArray_temp, 0);
+                //    CurrentSectArray.CopyTo(NewSectArray, 0);
+                //    double total_mass = 0;
 
-                    while (def_approx > def_limit)
-                    {
-                        double[] group_def_current = new double[nProps];
-                        double[] group_mass_current = new double[nProps];
-                        double[,] group_def_new = new double[nProps, nSections];
-                        double[,] group_mass_new = new double[nProps, nSections];
-                        double[,] group_efficiency = new double[nProps, nSections];
-                        double best_efficiency = 0;
-                        int[] ibest_efficiency = new int[2];
-                        total_mass = 0;
+                //    while (def_approx > def_limit)
+                //    {
+                //        double[] group_def_current = new double[nProps];
+                //        double[] group_mass_current = new double[nProps];
+                //        double[,] group_def_new = new double[nProps, nSections];
+                //        double[,] group_mass_new = new double[nProps, nSections];
+                //        double[,] group_efficiency = new double[nProps, nSections];
+                //        double best_efficiency = 0;
+                //        int[] ibest_efficiency = new int[2];
+                //        total_mass = 0;
 
-                        //Calc prop group current deflection and mass contributions
-                        foreach (int p in iList)
-                        {
-                            int iSect = CurrentSectArray_temp[p];
-                            NewSectArray[p] = iSect;
+                //        //Calc prop group current deflection and mass contributions
+                //        foreach (int p in iList)
+                //        {
+                //            int iSect = CurrentSectArray_temp[p];
+                //            NewSectArray[p] = iSect;
 
-                            foreach (int i in propList[p])
-                            {
-                                group_def_current[p] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                                group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
+                //            foreach (int i in propList[p])
+                //            {
+                //                group_def_current[p] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                //                group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
 
-                                //Calc prop group new deflections and masses
-                                for (int s = 0; s < nSections; s++)
-                                {
-                                    group_def_new[p, s] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
-                                    group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
-                                }
-                            }
-                            total_mass += group_mass_current[p];
+                //                //Calc prop group new deflections and masses
+                //                for (int s = 0; s < nSections; s++)
+                //                {
+                //                    group_def_new[p, s] += Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
+                //                    group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
+                //                }
+                //            }
+                //            total_mass += group_mass_current[p];
 
 
-                            //Calc efficiencies
-                            for (int s = 0; s < nSections; s++)
-                            {
-                                if (group_mass_new[p, s] - group_mass_current[p] != 0) group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
-                                else group_efficiency[p, s] = 0;
-                                //Choose most efficient
-                                if (group_efficiency[p, s] > best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
-                                {
-                                    best_efficiency = group_efficiency[p, s];
-                                    ibest_efficiency = new int[] { p, s };
-                                }
-                            }
-                        }
+                //            //Calc efficiencies
+                //            for (int s = 0; s < nSections; s++)
+                //            {
+                //                if (group_mass_new[p, s] - group_mass_current[p] != 0) group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
+                //                else group_efficiency[p, s] = 0;
+                //                //Choose most efficient
+                //                if (group_efficiency[p, s] > best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
+                //                {
+                //                    best_efficiency = group_efficiency[p, s];
+                //                    ibest_efficiency = new int[] { p, s };
+                //                }
+                //            }
+                //        }
 
-                        int property = ibest_efficiency[0];
-                        int section = ibest_efficiency[1];
-                        NewSectArray_def[property] = section;
-                        NewSectArray[property] = section;
-                        CurrentSectArray_temp[property] = section;
+                //        int property = ibest_efficiency[0];
+                //        int section = ibest_efficiency[1];
+                //        NewSectArray_def[property] = section;
+                //        NewSectArray[property] = section;
+                //        CurrentSectArray_temp[property] = section;
 
-                        def_approx += (group_def_new[property, section] - group_def_current[property]);
-                    }
+                //        def_approx += (group_def_new[property, section] - group_def_current[property]);
+                //    }
 
-                    double new_mass = 0;
-                    foreach (int p in iList)
-                    {
-                        int iSect = NewSectArray[p];
-                        foreach (int i in propList[p])
-                        {
-                            new_mass += BeamLength[i] * A[iSect] * 0.00000000785;
-                        }
-                    }
-                    stat2 = String.Format("total mass (of beam selection): {0:0.0}T", new_mass);
-                    stat3 = stat2;
-                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                    #endregion virtual stresses
-                }
-                else if (false) //average stress based for deflections
-                {
-                    // virtual stresses
-                    #region virtual stresses
-                    double Factor = def_limit / def_max;
+                //    double new_mass = 0;
+                //    foreach (int p in iList)
+                //    {
+                //        int iSect = NewSectArray[p];
+                //        foreach (int i in propList[p])
+                //        {
+                //            new_mass += BeamLength[i] * A[iSect] * 0.00000000785;
+                //        }
+                //    }
+                //    stat2 = String.Format("total mass (of beam selection): {0:0.0}T", new_mass);
+                //    stat3 = stat2;
+                //    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                //    #endregion virtual stresses
+                //}
 
-                    double stressAverage = 0;
-                    double total_deflection = 0;
-                    double[] stressVirtual = new double[nBeams];
-                    double[] deflectionVirtual = new double[nBeams];
+                //#endregion
 
-                    //Calculate current deflection
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        int iSect = CurrentSectArray[PropMapping[i] - 1];
-                        deflectionVirtual[i] = Optimisation.Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                        total_deflection += deflectionVirtual[i];
-                    }
-                    //MessageBox.Show(String.Format("Predicted deflection: {0:0.00}mm, \nActual deflection: {1:0.00}mm",total_deflection,def_max));
+                //foreach (int i in iList)
+                //{
+                //    incPrev[i] = inc[i];
 
-                    //Calculate current stress average
-                    foreach (int p in iList)
-                    {
-                        foreach (int i in propList[p])
-                        {
-                            if (Eval_Beam[i])
-                            {
-                                int iSect = CurrentSectArray[p];
-                                stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                                stressAverage += stressVirtual[i];
-                            }
-                        }
-                    }
-                    stressAverage = stressAverage / nBeams;
+                //    if ((NewSectArray[i] - CurrentSectArray[i]) > 0)
+                //    {
+                //        inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingUp;// DampingUp * (NewSectArray[i] - CurrentSectArray[i]);
+                //    }
+                //    else if ((NewSectArray[i] - CurrentSectArray[i]) < 0)
+                //    {
+                //        inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;
+                //        //if (iter < 15) inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;// DampingDown * (NewSectArray[i] - CurrentSectArray[i]);
+                //        //else inc[i] = 0;
+                //    }
+                //    else inc[i] = 0;
 
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        sb_virtual.Append((i + 1).ToString() + " " + stressVirtual[i].ToString() + " " + stressVirtual[i].ToString() + "\n");
-                    }
-
-                    //choose new sections
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        if (Eval_Beam[i])
-                        {
-                            for (int j = 0; j < nSections; j++)
-                            {
-                                stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[j], I11[j], I22[j], BeamLength[i]);
-
-                                if (stressVirtual[i] < (stressAverage * Math.Pow(Factor, 1.5)))
-                                {
-                                    NewSectArray_def[PropMapping[i] - 1] += j;
-                                    break;
-                                }
-                                else if (j == (nSections - 1))
-                                {
-                                    NewSectArray_def[PropMapping[i] - 1] += j;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    for (int p = 0; p < nProps; p++)
-                    {
-                        if (Prop_Count[p] > 0)
-                        {
-                            NewSectArray_def[p] /= Prop_Count[p];
-                            NewSectArray[p] = Convert.ToInt32(NewSectArray_def[p]);
-                        }
-                    }
-
-                    //Calculate new stress average
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        if (Eval_Beam[i])
-                        {
-                            int iSect = NewSectArray[PropMapping[i] - 1];
-                            stressVirtual[i] = Optimisation.Stress(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                            stressAverage += stressVirtual[i];
-                        }
-                    }
-                    stressAverage = stressAverage / nBeams;
-
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        sb_virtual.Append((i + 1).ToString() + " " + stressVirtual[i].ToString() + " " + stressVirtual[i].ToString() + "\n");
-                    }
-
-                    #endregion virtual stresses
-                }
-                else
-                {
-                    double stressAverage = 0;
-
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        if (Eval_Beam[i])
-                        {
-                            //stressA[i] = A_x[i] / A[CurrentSectArray[PropList[i] - 1]] + M_11[i] / Z11[CurrentSectArray[PropList[i] - 1]] + M_22[i] / Z22[CurrentSectArray[PropList[i] - 1]];
-                            stressA[i] = A_x[i] / A[CurrentSectArray[PropMapping[i] - 1]] + M_11[i] / Z11[CurrentSectArray[PropMapping[i] - 1]] / 2 + M_22[i] / Z22[CurrentSectArray[PropMapping[i] - 1]] / 2;
-                            stressAverage += stressA[i];
-                        }
-                    }
-
-                    stressAverage = stressAverage / nBeams;
-
-                    for (int i = 0; i < nBeams; i++)
-                    {
-                        if (Eval_Beam[i])
-                        {
-                            for (int j = NewSectArray[PropMapping[i] - 1]; j < nSections; j++)
-                            {
-                                //stressA[i] = A_x[i] / A[j] + M_11[i] / Z11[j] + M_22[i] / Z22[j];
-                                stressA[i] = A_x[i] / A[j] + M_11[i] / Z11[j] / 2 + M_22[i] / Z22[j] / 2;
-                                if (stressA[i] < stressAverage * Freq / FreqReq)
-                                {
-                                    NewSectArray[PropMapping[i] - 1] = j;
-                                    break;
-                                }
-                                else if (j == (nSections - 1))
-                                {
-                                    NewSectArray[PropMapping[i] - 1] = j;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                #endregion
-
-                foreach (int i in iList)
-                {
-                    incPrev[i] = inc[i];
-
-                    if ((NewSectArray[i] - CurrentSectArray[i]) > 0)
-                    {
-                        inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingUp;// DampingUp * (NewSectArray[i] - CurrentSectArray[i]);
-                    }
-                    else if ((NewSectArray[i] - CurrentSectArray[i]) < 0)
-                    {
-                        inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;
-                        //if (iter < 15) inc[i] = (NewSectArray[i] - CurrentSectArray[i]) * DampingDown;// DampingDown * (NewSectArray[i] - CurrentSectArray[i]);
-                        //else inc[i] = 0;
-                    }
-                    else inc[i] = 0;
-
-                    if (inc[i] != 0)
-                    {
-                        CurrentSectArray[i] += Convert.ToInt32(inc[i]);
-                        iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
-                        if (CheckiErr(iErr)) { return; };
-                        iErr = St7.St7CalculateBeamSectionProperties(1, i + 1, St7.btFalse, St7.btFalse);
-                        if (CheckiErr(iErr)) { return; };
-                        changed++;
-                        if (inc[i] != -incPrev[i])
-                        {
-                            looping = false;
-                        }
-                    }
-                    sb.Append(CurrentSectArray[i].ToString() + ",");
-                }
+                //    if (inc[i] != 0)
+                //    {
+                //        CurrentSectArray[i] += Convert.ToInt32(inc[i]);
+                //        iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
+                //        if (CheckiErr(iErr)) { return; };
+                //        iErr = St7.St7CalculateBeamSectionProperties(1, i + 1, St7.btFalse, St7.btFalse);
+                //        if (CheckiErr(iErr)) { return; };
+                //        changed++;
+                //        if (inc[i] != -incPrev[i])
+                //        {
+                //            looping = false;
+                //        }
+                //    }
+                //    sb.Append(CurrentSectArray[i].ToString() + ",");
+                //}
 
                 System.IO.File.AppendAllText(sOutPath, sb.ToString() + System.Environment.NewLine);
                 sb.Clear();
@@ -824,7 +909,6 @@ namespace Strand7_Steel_Section_Sizing
                 if (looping) { DampingDown = 1.0; }// 0.4; }
                 if (changed == 0) { break; }
             }
-            #endregion
 
             //#####################################################################################
 
@@ -854,7 +938,7 @@ namespace Strand7_Steel_Section_Sizing
             else if (changed == 0) { MessageBox.Show("Section sizing has converged!"); }
             else { MessageBox.Show("Section sizing has NOT converged. Maximum number of iterations reached."); }
         }
-        static void SetInputs(DoWorkEventArgs e)
+        private static void SetInputs(DoWorkEventArgs e)
         {
             List<object> args = (List<object>)e.Argument;
             file = (string)args[0];
@@ -864,6 +948,7 @@ namespace Strand7_Steel_Section_Sizing
             optDeflections = (bool)args[4];
             ResList_def = (List<int>)args[5];
             def_limit = (double)args[6];
+            optStresses = (bool)args[7];
         }
         private static void CollectSections()
         {
@@ -909,9 +994,103 @@ namespace Strand7_Steel_Section_Sizing
                 return;
             }
         }
-        public static double Stress(double A_x,double M_11, double M_22, double A, double I11, double I22, double L)
+        private static void RunSolver(Solver sCase, ref int NumPrimary, ref int NumSecondary)
         {
-            double Stress = (A_x / A + M_11 / I11/2 + M_22 / I22/2);// / L;
+            int iErr;
+            switch (sCase)
+            {
+                case Solver.linear:
+                    iErr = St7.St7SetResultFileName(1, sSt7LSAPath);
+                    if (CheckiErr(iErr)) { return; };
+                    iErr = St7.St7RunSolver(1, St7.stLinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
+                    if (CheckiErr(iErr)) { return; };
+                    sSt7ResPath = sSt7LSAPath;
+                    break;
+                case Solver.nonlin:
+                    iErr = St7.St7SetResultFileName(1, sSt7NLAPath);
+                    if (CheckiErr(iErr)) { return; };
+                    iErr = St7.St7RunSolver(1, St7.stNonlinearStaticSolver, St7.smBackgroundRun, St7.btTrue);
+                    if (CheckiErr(iErr)) { return; };
+                    sSt7ResPath = sSt7NLAPath;
+                    break;
+                case Solver.frequency:
+                    iErr = St7.St7SetResultFileName(1, sSt7FreqPath);
+                    if (CheckiErr(iErr)) { return; };
+                    iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smProgressRun, St7.btTrue);
+                    if (CheckiErr(iErr)) { return; };
+                    sSt7ResPath = sSt7NLAPath;
+                    break;
+
+                    //sSt7ResPath = sSt7FreqPath;
+                    //iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+                    //if (CheckiErr(iErr)) { return; };
+
+                    //double[] ModalRes = new double[10];
+                    //iErr = St7.St7GetModalResultsNFA(1, 1, ModalRes);
+                    //Freq = ModalRes[0];
+
+                    //iErr = St7.St7CloseResultFile(1);
+                    //if (CheckiErr(iErr)) { return; };
+                    //break;
+            }
+
+            iErr = St7.St7OpenResultFile(1, sSt7ResPath, "", St7.btTrue, ref NumPrimary, ref NumSecondary);
+            if (CheckiErr(iErr)) { return; };
+        }
+        private static void UpdateSections(int[] CurrentSectArray, int[] NewSectArray, double[] incPrev, double[] inc)
+        {
+            int iErr = 0;
+            foreach (int i in iList)
+            {
+                incPrev[i] = inc[i];
+
+                if ((NewSectArray[i] - CurrentSectArray[i]) > 0)
+                {
+                    inc[i] = (NewSectArray[i] - CurrentSectArray[i]);// * DampingUp;
+                }
+                else if ((NewSectArray[i] - CurrentSectArray[i]) < 0)
+                {
+                    inc[i] = (NewSectArray[i] - CurrentSectArray[i]);// * DampingDown;
+                }
+                else inc[i] = 0;
+
+                if (inc[i] != 0)
+                {
+                    CurrentSectArray[i] += Convert.ToInt32(inc[i]);
+                    iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
+                    if (CheckiErr(iErr)) { return; };
+                    iErr = St7.St7CalculateBeamSectionProperties(1, i + 1, St7.btFalse, St7.btFalse);
+                    if (CheckiErr(iErr)) { return; };
+                    changed++;
+                    if (inc[i] != -incPrev[i])
+                    {
+                        looping = false;
+                    }
+                }
+                sb.Append(CurrentSectArray[i].ToString() + ",");
+            }
+        }
+        public static double Stress(double A_x,double M_11, double M_22, double A, double I11, double I22, double L, double Z11, double Z22)
+        {
+            double Stress = 0;
+            if (A_x < 0)
+            {
+                //### Buckling Check ####
+                double E_s = 210000;
+                double f_y = 355;
+                double alpha_c = 0.49;
+                double lambda = Math.Sqrt(Math.Pow(L, 2) * A / Math.Min(I11, I22));
+                double N_cr = Math.Pow(Math.PI, 2) * E_s * A / Math.Pow(lambda, 2);
+                double lambda_nd = Math.Max(0.2, Math.Sqrt(A * f_y / N_cr));
+                double phi_m = 0.5 * (1 + alpha_c * (lambda_nd - 0.2) + Math.Pow(lambda_nd, 2));
+                double chi_n = 1 / (phi_m + Math.Sqrt(Math.Pow(phi_m, 2) - Math.Pow(lambda_nd, 2)));
+
+                Stress = Math.Abs(A_x) / A / chi_n + M_11 / Z11 + M_22 / Z22;
+            }
+            else
+            {
+                Stress = A_x / A + M_11 / Z11 + M_22 / Z22;
+            }
             return Stress;
         }
         public static double Deflection(double A_x, double M_11, double M_22, double A, double I11, double I22, double L)
@@ -967,7 +1146,20 @@ namespace Strand7_Steel_Section_Sizing
         private static List<int> ResList_def = new List<int>();
         private static Solver sCase = new Solver();
         private static bool optDeflections = new bool();
+        private static bool optStresses = new bool();
         private static double def_limit = new double();
+
+        private static string sSt7ResPath = "";
+        private static string sSt7LSAPath = "";
+        private static string sSt7NLAPath = "";
+        private static string sSt7FreqPath = "";
+
+        private static bool looping = true;
+        private static int changed = 0;
+        private static StringBuilder sb = new StringBuilder();
+        private static double DampingUp = 1.0;
+        private static double DampingDown = 0;
+        private static double[][] SectionDoubles;
 
         public enum Solver { linear, nonlin, frequency }
         #endregion

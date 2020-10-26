@@ -175,6 +175,7 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(Def_checkbox.Checked);
                     args.Add(ResList_def);
                     args.Add(def_limit);
+                    args.Add(Stress_checkbox.Checked);
                     try { worker.RunWorkerAsync(args); }
                     catch { }
                 }
