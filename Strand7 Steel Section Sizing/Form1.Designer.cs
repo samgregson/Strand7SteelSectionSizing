@@ -48,6 +48,7 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.outputBox = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -87,7 +88,7 @@
             this.CancelButton.TabIndex = 9;
             this.CancelButton.Text = "Cancel";
             this.CancelButton.UseVisualStyleBackColor = true;
-            this.CancelButton.Click += new System.EventHandler(this.button1_Click);
+            this.CancelButton.Click += new System.EventHandler(this.Cancel_Click);
             // 
             // BrowseButton
             // 
@@ -98,7 +99,7 @@
             this.BrowseButton.TabIndex = 8;
             this.BrowseButton.Text = "Browse";
             this.BrowseButton.UseVisualStyleBackColor = true;
-            this.BrowseButton.Click += new System.EventHandler(this.button2_Click);
+            this.BrowseButton.Click += new System.EventHandler(this.Browse_Click);
             // 
             // SecListBox
             // 
@@ -261,12 +262,24 @@
             this.groupBox3.TabIndex = 18;
             this.groupBox3.TabStop = false;
             // 
+            // outputBox
+            // 
+            this.outputBox.BackColor = System.Drawing.SystemColors.Window;
+            this.outputBox.Location = new System.Drawing.Point(300, 13);
+            this.outputBox.Multiline = true;
+            this.outputBox.Name = "outputBox";
+            this.outputBox.ReadOnly = true;
+            this.outputBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.outputBox.Size = new System.Drawing.Size(323, 315);
+            this.outputBox.TabIndex = 19;
+            // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(297, 337);
+            this.ClientSize = new System.Drawing.Size(635, 337);
+            this.Controls.Add(this.outputBox);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -312,6 +325,7 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.TextBox outputBox;
     }
 }
 
