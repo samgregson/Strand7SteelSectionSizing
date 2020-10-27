@@ -13,15 +13,17 @@ namespace Strand7_Steel_Section_Sizing
 {
     class Optimisation
     {
-        public static void Optimise(BackgroundWorker worker, DoWorkEventArgs e)
+        public void Optimise(BackgroundWorker worker, DoWorkEventArgs e)
         {
+            int changes;
+
             bool init = true;
             string stat = "Initialising...";
             string stat2 = "opening Strand7 file...";
             string stat3 = "Optimisation started at: " + DateTime.Now;
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
             //#####################################################################################
-
+            
             SetInputs(e);
             CollectSections();
             int nSections = D1.Count;
@@ -34,13 +36,9 @@ namespace Strand7_Steel_Section_Sizing
             //optimisation settings
             double UtilMax = 0.99;
             double DesignStress = 355;//157.9;//355/1.1;
-            DampingUp = 1.0;//0.6;
-            DampingDown = 1.0;//0.4;
             int iter_max = 50;
-            changed = 0;
 
             //string builders
-            StringBuilder sb = new StringBuilder(100);
             StringBuilder sb_virtual = new StringBuilder(100);
 
             //file paths
@@ -53,7 +51,7 @@ namespace Strand7_Steel_Section_Sizing
             sSt7LSAPath = sBaseFile + " - optimised.LSA";
             sSt7NLAPath = sBaseFile + " - optimised.NLA";
             sSt7FreqPath = sBaseFile + " - optimised.NFA";
-            string sSt7BucPath = sBaseFile + " - optimised.LBA";
+            //string sSt7BucPath = sBaseFile + " - optimised.LBA";
             sSt7ResPath = "";
             string sSt7OptimisedPath = sBaseFile + " - optimised.st7";
 
@@ -92,14 +90,13 @@ namespace Strand7_Steel_Section_Sizing
             double[] M_22 = new double[nBeams];
             int[] CurrentSectArray = new int[nProps];
             int[] NewSectArray = new int[nProps];
-            double[] NewSectArray_def = new double[nProps];
             double[] inc = new double[nProps];
             double[] incPrev = new double[nProps];
             int virtual_case = 0;
 
             if (nProps < 1)
             {
-                MessageBox.Show("No beams sections available. window");
+                //MessageBox.Show("No beams sections available. window");
                 throw new Exception("No beams sections available.");
                 return;
             }
@@ -117,7 +114,12 @@ namespace Strand7_Steel_Section_Sizing
             }
             for (int i = 0; i < iList.Count; i++)
             {
-                iList[i] = iList[i] - 1;
+                if (iList[i] <= nProps) iList[i] = iList[i] - 1;
+                else
+                {
+                    iList.RemoveAt(i);
+                    i--;
+                }
             }
 
             //set beams to biggest sections (to avoid instabilities)
@@ -198,7 +200,7 @@ namespace Strand7_Steel_Section_Sizing
                 e.Cancel = true;
                 return;
             }
-
+                       
             int[] units = new int[] { St7.luMILLIMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
             iErr = St7.St7ConvertUnits(1, units);
             if (CheckiErr(iErr)) { return; };
@@ -263,7 +265,7 @@ namespace Strand7_Steel_Section_Sizing
             //####################################
             for (int iter = 1; iter < iter_max; iter++)
             {
-                int changes = 0;
+                changes = 0;
 
                 string sOutPathVirtualStresses = System.IO.Path.Combine(optFolder, "virtual stresses" + iter.ToString() + ".txt");
                 sb_virtual.Append("TITLE Virtual stresses\n");
@@ -271,7 +273,7 @@ namespace Strand7_Steel_Section_Sizing
                 stat = "Iteration: " + iter.ToString();
                 stat2 = "";
                 stat3 = Environment.NewLine + "ITERATION: " + iter.ToString(); ;
-                if (changed > 0) { stat2 = changed.ToString() + " changes in previous iteration"; }
+                if (changes > 0) { stat2 = changes.ToString() + " changes in previous iteration"; }
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
                 //###################################
@@ -413,9 +415,11 @@ namespace Strand7_Steel_Section_Sizing
                 ///     iterate
                 if (optDeflections)
                 {
+                    changes = 0;
                     for (int iter_def = 1; iter_def < 50; iter_def++)
                     {
                         int changes_def = 0;
+                        CurrentSectArray.CopyTo(NewSectArray, 0);
 
                         //solve and open results file
                         stat2 = "running solver...";
@@ -479,136 +483,133 @@ namespace Strand7_Steel_Section_Sizing
                         iErr = St7.St7CloseResultFile(1);
                         if (CheckiErr(iErr)) { return; };
 
-                        //apply unit force to worst case node
-                        iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, virtual_load);
-                        if (CheckiErr(iErr)) { return; };
-
-                        //solve and open results file
-                        stat2 = "running solver...";
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                        RunSolver(sCase, ref NumPrimary, ref NumSecondary);
-                        if (worker.CancellationPending)
+                        if (def_max > def_limit)
                         {
-                            iErr = St7.St7CloseFile(1);
+                            //apply unit force to worst case node
+                            iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, virtual_load);
                             if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7Release();
-                            if (CheckiErr(iErr)) { return; };
-                            e.Cancel = true;
-                            return;
-                        }
 
-                        //collect results
-                        stat2 = "collecting results...";
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                        foreach (int ResCase in ResList_stress)
-                        {
-                            stat2 = "collecting stress results for case no " + ResCase.ToString() + "...";
+                            //solve and open results file
+                            stat2 = "running solver...";
                             stat3 = "";
                             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-
-                            foreach (int p in iList) //loop through properties
+                            RunSolver(sCase, ref NumPrimary, ref NumSecondary);
+                            if (worker.CancellationPending)
                             {
-                                foreach (int i in propList[p])
+                                iErr = St7.St7CloseFile(1);
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7Release();
+                                if (CheckiErr(iErr)) { return; };
+                                e.Cancel = true;
+                                return;
+                            }
+
+                            //collect results
+                            stat2 = "collecting results...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                            foreach (int ResCase in ResList_stress)
+                            {
+                                stat2 = "collecting stress results for case no " + ResCase.ToString() + "...";
+                                stat3 = "";
+                                worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                                foreach (int p in iList) //loop through properties
                                 {
-                                    int NumPoints = 0;
-                                    int NumColumns = 0;
-                                    double[] BeamPos = new double[St7.kMaxBeamResult];
-                                    iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 8, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
-                                    if (CheckiErr(iErr)) { return; };
-                                    double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
-                                    double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
-                                    double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
-
-                                    for (int j = 1; j < NumPoints; j++)
+                                    foreach (int i in propList[p])
                                     {
-                                        A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
-                                        M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
-                                        M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
-                                    }
+                                        int NumPoints = 0;
+                                        int NumColumns = 0;
+                                        double[] BeamPos = new double[St7.kMaxBeamResult];
+                                        iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, i + 1, 8, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                        if (CheckiErr(iErr)) { return; };
+                                        double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                                        double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                                        double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
 
-                                    //Multiply for sensitivity
-                                    A_x[i] *= (A_x_addition / NumPoints);
-                                    M_11[i] *= (M_11_addition / NumPoints);
-                                    M_22[i] *= (M_22_addition / NumPoints);
+                                        for (int j = 1; j < NumPoints; j++)
+                                        {
+                                            A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                                            M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                            M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                        }
+
+                                        //Multiply for sensitivity
+                                        A_x[i] *= (A_x_addition / NumPoints);
+                                        M_11[i] *= (M_11_addition / NumPoints);
+                                        M_22[i] *= (M_22_addition / NumPoints);
+                                    }
                                 }
                             }
-                        }
-                        iErr = St7.St7CloseResultFile(1);
-                        if (CheckiErr(iErr)) { return; };
-                        if (worker.CancellationPending)
-                        {
-                            iErr = St7.St7CloseFile(1);
+                            iErr = St7.St7CloseResultFile(1);
                             if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7Release();
-                            if (CheckiErr(iErr)) { return; };
-                            e.Cancel = true;
-                            return;
-                        }
-
-                        //delete unit force on worst case node
-                        iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, new double[] { 0, 0, 0 });
-                        if (CheckiErr(iErr)) { return; };
-
-                        //choose sections
-                        stat2 = "choosing sections...";
-                        stat3 = "";
-                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                        double def_approx = def_max;
-                        int[] CurrentSectArray_temp = new int[nProps];
-                        CurrentSectArray.CopyTo(CurrentSectArray_temp, 0);
-                        CurrentSectArray.CopyTo(NewSectArray, 0);
-                        while (def_approx > def_limit)
-                        {
-                            double[] group_def_current = new double[nProps];
-                            double[] group_mass_current = new double[nProps];
-                            double[,] group_def_new = new double[nProps, nSections];
-                            double[,] group_mass_new = new double[nProps, nSections];
-                            double[,] group_efficiency = new double[nProps, nSections];
-                            double best_efficiency = 0;
-                            int[] ibest_efficiency = new int[2];
-
-                            //Calc prop group current deflection and mass contributions
-                            foreach (int p in iList)
+                            if (worker.CancellationPending)
                             {
-                                int iSect = CurrentSectArray_temp[p];
-                                NewSectArray[p] = iSect;
+                                iErr = St7.St7CloseFile(1);
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7Release();
+                                if (CheckiErr(iErr)) { return; };
+                                e.Cancel = true;
+                                return;
+                            }
 
-                                foreach (int i in propList[p])
+                            //delete unit force on worst case node
+                            iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, new double[] { 0, 0, 0 });
+                            if (CheckiErr(iErr)) { return; };
+
+                            //choose sections
+                            stat2 = "choosing sections...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                            double def_approx = def_max;
+                            while (def_approx / def_limit > 0.93)
+                            {
+                                double[] group_def_current = new double[nProps];
+                                double[] group_mass_current = new double[nProps];
+                                double[,] group_def_new = new double[nProps, nSections];
+                                double[,] group_mass_new = new double[nProps, nSections];
+                                double[,] group_efficiency = new double[nProps, nSections];
+                                double best_efficiency = 0;
+                                int[] ibest_efficiency = new int[2];
+
+                                //Calc prop group current deflection and mass contributions
+                                foreach (int p in iList)
                                 {
-                                    group_def_current[p] += Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
-                                    group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
+                                    int iSect = NewSectArray[p];
 
-                                    //Calc prop group new deflections and masses
+                                    foreach (int i in propList[p])
+                                    {
+                                        group_def_current[p] += Deflection(A_x[i], M_11[i], M_22[i], A[iSect], I11[iSect], I22[iSect], BeamLength[i]);
+                                        group_mass_current[p] += BeamLength[i] * A[iSect] * 0.00000000785;
+
+                                        //Calc prop group new deflections and masses
+                                        for (int s = 0; s < nSections; s++)
+                                        {
+                                            group_def_new[p, s] += Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
+                                            group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
+                                        }
+                                    }
+
+                                    //Calc efficiencies
                                     for (int s = 0; s < nSections; s++)
                                     {
-                                        group_def_new[p, s] += Deflection(A_x[i], M_11[i], M_22[i], A[s], I11[s], I22[s], BeamLength[i]);
-                                        group_mass_new[p, s] += BeamLength[i] * A[s] * 0.00000000785;
+                                        if (group_mass_new[p, s] - group_mass_current[p] != 0) group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
+                                        else group_efficiency[p, s] = 0;
+                                        //Choose most efficient
+                                        if (group_efficiency[p, s] > best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
+                                        {
+                                            best_efficiency = group_efficiency[p, s];
+                                            ibest_efficiency = new int[] { p, s };
+                                        }
                                     }
                                 }
 
-                                //Calc efficiencies
-                                for (int s = 0; s < nSections; s++)
-                                {
-                                    if (group_mass_new[p, s] - group_mass_current[p] != 0) group_efficiency[p, s] = (group_def_current[p] - group_def_new[p, s]) / (group_mass_new[p, s] - group_mass_current[p]);
-                                    else group_efficiency[p, s] = 0;
-                                    //Choose most efficient
-                                    if (group_efficiency[p, s] > best_efficiency && (group_def_new[p, s] - group_def_current[p]) < 0)
-                                    {
-                                        best_efficiency = group_efficiency[p, s];
-                                        ibest_efficiency = new int[] { p, s };
-                                    }
-                                }
+                                int property = ibest_efficiency[0];
+                                int section = ibest_efficiency[1];
+                                NewSectArray[property] = section;
+
+                                def_approx += (group_def_new[property, section] - group_def_current[property]);
                             }
-
-                            int property = ibest_efficiency[0];
-                            int section = ibest_efficiency[1];
-                            NewSectArray_def[property] = section;
-                            NewSectArray[property] = section;
-                            CurrentSectArray_temp[property] = section;
-
-                            def_approx += (group_def_new[property, section] - group_def_current[property]);
                         }
 
                         //calc current mass
@@ -655,7 +656,7 @@ namespace Strand7_Steel_Section_Sizing
                     if (CheckiErr(iErr)) { return; };
                 }
 
-                if (looping) { DampingDown = 1.0; }// 0.4; }
+                //if (looping) { DampingDown = 1.0; }// 0.4; }
                 if (changes == 0) { break; }
             }
 
@@ -677,17 +678,19 @@ namespace Strand7_Steel_Section_Sizing
             iErr = St7.St7Release();
             if (CheckiErr(iErr)) { return; };
 
-            stat = "complete";
+            stat = "Complete";
             stat2 = "";
             stat3 = Environment.NewLine + "Optimisation completed at: " + DateTime.Now;
             init = false;
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-            if (!stress_satisfied) { MessageBox.Show("Warning: One or more beams are still overstressed!"); }
-            else if (changed == 0) { MessageBox.Show("Section sizing has converged!"); }
-            else { MessageBox.Show("Section sizing has NOT converged. Maximum number of iterations reached."); }
+            //if (!stress_satisfied) { MessageBox.Show("Warning: One or more beams are still overstressed!"); }
+            //else if (changes == 0) { MessageBox.Show("Section sizing has converged!"); }
+            //else { MessageBox.Show("Section sizing has NOT converged. Maximum number of iterations reached."); }
+
+            return;
         }
-        private static void SetInputs(DoWorkEventArgs e)
+        private void SetInputs(DoWorkEventArgs e)
         {
             List<object> args = (List<object>)e.Argument;
             file = (string)args[0];
@@ -699,17 +702,35 @@ namespace Strand7_Steel_Section_Sizing
             def_limit = (double)args[6];
             optStresses = (bool)args[7];
         }
+        public Optimisation() 
+        {
+            sSt7ResPath = "";
+            sSt7LSAPath = "";
+            sSt7NLAPath = "";
+            sSt7FreqPath = "";
+            looping = true;
+            sb = new StringBuilder();
+
+            D1 = new List<double>();
+            D2 = new List<double>();
+            D3 = new List<double>();
+            T1 = new List<double>();
+            T2 = new List<double>();
+            T3 = new List<double>();
+            A = new List<double>();
+            I11 = new List<double>();
+            I22 = new List<double>();
+            SType = new List<int>();
+            Z11 = new List<double>();
+            Z22 = new List<double>();
+        }
         private static void CollectSections()
         {
             int iErr;
             string filePath = System.IO.Path.GetTempPath() + "Section_CSV.txt";
             if (!System.IO.File.Exists(filePath))
             {
-                MessageBox.Show("section data file does not exist. window");
-                iErr = St7.St7CloseFile(1);
-                if (CheckiErr(iErr)) { return; };
-                iErr = St7.St7Release();
-                if (CheckiErr(iErr)) { return; };
+                //MessageBox.Show("section data file does not exist. window");
                 throw new Exception("section data file does not exist.");
                 return;
             }
@@ -739,14 +760,15 @@ namespace Strand7_Steel_Section_Sizing
 
             if (D1.Count == 0)
             {
-                MessageBox.Show("No section properties found.");
+                //MessageBox.Show("No section properties found.");
                 return;
             }
 
             SectionDoubles = new double[D1.Count + 1][];
+
             for (int i = 0; i < D1.Count; i++) { SectionDoubles[i] = new double[] { D1[i], D2[i], D3[i], T1[i], T2[i], T3[i] }; }
         }
-        private static void RunSolver(Solver sCase, ref int NumPrimary, ref int NumSecondary)
+        private void RunSolver(Solver sCase, ref int NumPrimary, ref int NumSecondary)
         {
             int iErr;
             switch (sCase)
@@ -791,7 +813,7 @@ namespace Strand7_Steel_Section_Sizing
         }
         private static void UpdateSections(int[] CurrentSectArray, int[] NewSectArray, double[] incPrev, double[] inc, ref int changes)
         {
-            int iErr = 0;
+            int iErr;
             foreach (int i in iList)
             {
                 incPrev[i] = inc[i];
@@ -822,7 +844,7 @@ namespace Strand7_Steel_Section_Sizing
                 sb.Append(CurrentSectArray[i].ToString() + ",");
             }
         }
-        public static double Stress(double A_x,double M_11, double M_22, double A, double I11, double I22, double L, double Z11, double Z22)
+        private static double Stress(double A_x,double M_11, double M_22, double A, double I11, double I22, double L, double Z11, double Z22)
         {
             double Stress = 0;
             if (A_x < 0)
@@ -845,12 +867,12 @@ namespace Strand7_Steel_Section_Sizing
             }
             return Stress;
         }
-        public static double Deflection(double A_x, double M_11, double M_22, double A, double I11, double I22, double L)
+        private static double Deflection(double A_x, double M_11, double M_22, double A, double I11, double I22, double L)
         {
             double Deflection = (A_x / A + M_11 / I11 + M_22 / I22) * L / 210000;
             return Deflection;
         }
-        public static bool CheckiErr(int iErr)
+        private static bool CheckiErr(int iErr)
         {
             StringBuilder sb = new StringBuilder(St7.kMaxStrLen);
             string errorstring;
@@ -879,39 +901,36 @@ namespace Strand7_Steel_Section_Sizing
         }
 
         #region variables
-        private static List<double> A = new List<double>();
-        private static List<double> D1 = new List<double>();
-        private static List<double> D2 = new List<double>();
-        private static List<double> D3 = new List<double>();
-        private static List<double> T1 = new List<double>();
-        private static List<double> T2 = new List<double>();
-        private static List<double> T3 = new List<double>();
-        private static List<double> I11 = new List<double>();
-        private static List<double> I22 = new List<double>();
-        private static List<double> Z11 = new List<double>();
-        private static List<double> Z22 = new List<double>();
-        private static List<int> SType = new List<int>();
+        private static double[][] SectionDoubles { get; set; }
+        private static List<double> A { get; set; }
+        private static List<double> D1 { get; set; }
+        private static List<double> D2 { get; set; }
+        private static List<double> D3 { get; set; }
+        private static List<double> T1 { get; set; }
+        private static List<double> T2 { get; set; }
+        private static List<double> T3 { get; set; }
+        private static List<double> I11 { get; set; }
+        private static List<double> I22 { get; set; }
+        private static List<double> Z11 { get; set; }
+        private static List<double> Z22 { get; set; }
+        private static List<int> SType { get; set; }
 
-        private static string file = "";
-        private static List<int> iList = new List<int>();
-        private static List<int> ResList_stress = new List<int>();
-        private static List<int> ResList_def = new List<int>();
-        private static Solver sCase = new Solver();
-        private static bool optDeflections = new bool();
-        private static bool optStresses = new bool();
-        private static double def_limit = new double();
+        private static string file { get; set; }
+        private static List<int> iList { get; set; }
+        private static List<int> ResList_stress { get; set; }
+        private static List<int> ResList_def { get; set; }
+        private static Solver sCase { get; set; }
+        private static bool optDeflections { get; set; }
+        private static bool optStresses { get; set; }
+        private static double def_limit { get; set; }
+        private static string sSt7ResPath { get; set; }
+        private static string sSt7LSAPath { get; set; }
+        private static string sSt7NLAPath { get; set; }
+        private static string sSt7FreqPath { get; set; }
 
-        private static string sSt7ResPath = "";
-        private static string sSt7LSAPath = "";
-        private static string sSt7NLAPath = "";
-        private static string sSt7FreqPath = "";
+        private static StringBuilder sb { get; set; }
 
-        private static bool looping = true;
-        private static int changed = 0;
-        private static StringBuilder sb = new StringBuilder();
-        private static double DampingUp = 1.0;
-        private static double DampingDown = 0;
-        private static double[][] SectionDoubles;
+        private static bool looping { get; set; }
 
         public enum Solver { linear, nonlin, frequency }
         #endregion

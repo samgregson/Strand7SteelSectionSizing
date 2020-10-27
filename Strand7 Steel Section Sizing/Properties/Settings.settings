@@ -21,7 +21,7 @@
       <Value Profile="(Default)">2-21</Value>
     </Setting>
     <Setting Name="opt_stress" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>

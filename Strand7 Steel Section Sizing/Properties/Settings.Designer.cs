@@ -97,7 +97,7 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool opt_stress {
             get {
                 return ((bool)(this["opt_stress"]));
