@@ -270,15 +270,16 @@
             this.outputBox.Name = "outputBox";
             this.outputBox.ReadOnly = true;
             this.outputBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.outputBox.Size = new System.Drawing.Size(323, 315);
+            this.outputBox.Size = new System.Drawing.Size(403, 315);
             this.outputBox.TabIndex = 19;
+            this.outputBox.WordWrap = false;
             // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(635, 337);
+            this.ClientSize = new System.Drawing.Size(715, 337);
             this.Controls.Add(this.outputBox);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
