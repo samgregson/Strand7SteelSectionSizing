@@ -13,7 +13,6 @@ namespace Strand7_Steel_Section_Sizing
     public partial class Form1 : Form
     {
         bool initialising;
-        bool closePending;
         string status;
         string status2;
         string status3;
@@ -21,25 +20,20 @@ namespace Strand7_Steel_Section_Sizing
         public Form1()
         {
             InitializeComponent();
-
-            this.worker.DoWork += worker_DoWork;
-            this.worker.ProgressChanged += worker_ProgressChanged;
-            this.worker.RunWorkerCompleted += worker_RunWorkerCompleted;
         }
         private void Form1_Load(object sender, EventArgs e)
         {
             initialising = true;
-            //this.worker.DoWork += worker_DoWork;
-            //this.worker.ProgressChanged += worker_ProgressChanged;
-            //this.worker.RunWorkerCompleted += worker_RunWorkerCompleted;
+            this.worker.DoWork += worker_DoWork;
+            this.worker.ProgressChanged += worker_ProgressChanged;
+            this.worker.RunWorkerCompleted += worker_RunWorkerCompleted;
             timer1 = new Timer();
             timer1.Enabled = false;
         }
         private void worker_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             BackgroundWorker worker1 = sender as BackgroundWorker;
-            Optimisation opt = new Optimisation();
-            opt.Optimise(worker1, e);
+            Optimisation.Optimise(worker1, e);
         }
         public void timer1_Tick(object sender, EventArgs e)
         {
@@ -101,18 +95,13 @@ namespace Strand7_Steel_Section_Sizing
             if (e.Error != null)
             { MessageBox.Show(e.Error.Message);}
             else if (e.Cancelled)
-            { status = "Cancelled"; status3 = "Cancelled"; }
+            { status = "Cancelled"; }
             else
             { status = "Complete"; }
             status2 = "";
             status3 = "";
             updatetext();
-
-            //BackgroundWorker worker1 = sender as BackgroundWorker;
-            //worker1.Dispose();
-
-            //if (closePending) this.Close();
-            //closePending = false;
+            //Environment.Exit(0);
         }
         private void Browse_Click(object sender, EventArgs e)
         {
@@ -173,6 +162,11 @@ namespace Strand7_Steel_Section_Sizing
 
                     string sFile = fdlg.FileName;
 
+                    //Dictionary<string, object> input = new Dictionary<string, object>();
+                    //input.Add("sFile", sFile);
+                    //input.Add("sPropList", sPropList);
+                    //input.Add("ResList_stress", ResList_stress);
+
                     args.Add(sFile);
                     args.Add(sPropList);
                     args.Add(ResList_stress);
@@ -187,13 +181,12 @@ namespace Strand7_Steel_Section_Sizing
                 }
                 else
                 {
-                    //this.Close();
+                    this.Close();
                 }
             }
         }
         private void Cancel_Click(object sender, EventArgs e)
         {
-            initialising = false;
             worker.CancelAsync();
         }
         bool ConvertString(string s_in, ref List<int> iList, ref string error)
@@ -255,22 +248,6 @@ namespace Strand7_Steel_Section_Sizing
 
             iList = sList;
             return flag;
-        }
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            worker.CancelAsync();
-            //if (worker.IsBusy)
-            //{
-            //    closePending = true;
-            //    worker.CancelAsync();
-            //    e.Cancel = true;
-            //    this.Enabled = false;   // or this.Hide()
-            //    return;
-            //}
-            //else
-            //{
-            //    base.OnFormClosing(e);
-            //}
         }
     }
 }
