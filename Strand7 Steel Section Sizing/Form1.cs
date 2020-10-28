@@ -181,7 +181,7 @@ namespace Strand7_Steel_Section_Sizing
                 }
                 else
                 {
-                    this.Close();
+                    //this.Close();
                 }
             }
         }

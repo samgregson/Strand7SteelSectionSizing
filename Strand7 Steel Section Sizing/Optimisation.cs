@@ -238,13 +238,13 @@ namespace Strand7_Steel_Section_Sizing
                 //add 1 to cases as virtual load case will be created
                 for (int i = 0; i < ResList_stress.Count; i++)
                 {
-                    //if (ResList_stress[i] > NumPrimary)
-                    //{ ResList_stress[i]++; }
+                    if (ResList_stress[i] > NumPrimary)
+                    { ResList_stress[i]++; }
                 }
                 for (int i = 0; i < ResList_def.Count; i++)
                 {
-                    //if (ResList_def[i] > NumPrimary)
-                    //{ ResList_def[i]++; }
+                    if (ResList_def[i] > NumPrimary)
+                    { ResList_def[i]++; }
                 }
                 iErr = St7.St7NewLoadCase(1, "Virtual Load");
                 if (CheckiErr(iErr)) { return; };
@@ -502,9 +502,9 @@ namespace Strand7_Steel_Section_Sizing
                         stat2 = "collecting results...";
                         stat3 = "";
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-                        foreach (int ResCase in ResList_stress)
+                        foreach (int ResCase in ResList_def)
                         {
-                            stat2 = "collecting stress results for case no " + ResCase.ToString() + "...";
+                            stat2 = "collecting deflection results for case no " + ResCase.ToString() + "...";
                             stat3 = "";
                             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
@@ -559,7 +559,7 @@ namespace Strand7_Steel_Section_Sizing
                         int[] CurrentSectArray_temp = new int[nProps];
                         CurrentSectArray.CopyTo(CurrentSectArray_temp, 0);
                         CurrentSectArray.CopyTo(NewSectArray, 0);
-                        while (def_approx > def_limit)
+                        while (def_approx / def_limit > 0.95)
                         {
                             double[] group_def_current = new double[nProps];
                             double[] group_mass_current = new double[nProps];
