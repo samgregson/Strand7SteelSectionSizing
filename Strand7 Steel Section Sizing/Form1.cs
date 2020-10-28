@@ -249,5 +249,17 @@ namespace Strand7_Steel_Section_Sizing
             iList = sList;
             return flag;
         }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Properties.Settings.Default.sections_list = this.SecListBox.Text;
+            Properties.Settings.Default.def_cases = this.DefCaseBox.Text;
+            Properties.Settings.Default.stress_cases = this.StressCaseBox.Text;
+            Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
+            Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
+            Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
+
+            Properties.Settings.Default.Save();
+        }
     }
 }

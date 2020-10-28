@@ -219,6 +219,7 @@
             // 
             this.Stress_checkbox.AutoSize = true;
             this.Stress_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress;
+            this.Stress_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Stress_checkbox.Location = new System.Drawing.Point(6, 12);
             this.Stress_checkbox.Name = "Stress_checkbox";
             this.Stress_checkbox.Size = new System.Drawing.Size(96, 17);
@@ -292,6 +293,7 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "Strand7 Section Sizing";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

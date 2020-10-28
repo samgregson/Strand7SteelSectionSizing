@@ -238,13 +238,13 @@ namespace Strand7_Steel_Section_Sizing
                 //add 1 to cases as virtual load case will be created
                 for (int i = 0; i < ResList_stress.Count; i++)
                 {
-                    if (ResList_stress[i] > NumPrimary)
-                    { ResList_stress[i]++; }
+                    //if (ResList_stress[i] > NumPrimary)
+                    //{ ResList_stress[i]++; }
                 }
                 for (int i = 0; i < ResList_def.Count; i++)
                 {
-                    if (ResList_def[i] > NumPrimary)
-                    { ResList_def[i]++; }
+                    //if (ResList_def[i] > NumPrimary)
+                    //{ ResList_def[i]++; }
                 }
                 iErr = St7.St7NewLoadCase(1, "Virtual Load");
                 if (CheckiErr(iErr)) { return; };
