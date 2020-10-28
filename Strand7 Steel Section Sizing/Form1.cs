@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Strand7_Steel_Section_Sizing.Properties;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -258,7 +259,17 @@ namespace Strand7_Steel_Section_Sizing
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            worker.CancelAsync();
+            Settings.Default.sections_list = this.SecListBox.Text;
+            Settings.Default.def_cases = this.DefCaseBox.Text;
+            Settings.Default.stress_cases = this.StressCaseBox.Text;
+            Settings.Default.opt_stress = this.Stress_checkbox.Checked;
+            Settings.Default.opt_def = this.Def_checkbox.Checked;
+            Settings.Default.def_lim = this.DefLimitBox.Text;
+
+            Settings.Default.Save();
+
+            //worker.CancelAsync();
+
             //if (worker.IsBusy)
             //{
             //    closePending = true;
@@ -269,7 +280,7 @@ namespace Strand7_Steel_Section_Sizing
             //}
             //else
             //{
-            //    base.OnFormClosing(e);
+            //base.OnFormClosing(e);
             //}
         }
     }

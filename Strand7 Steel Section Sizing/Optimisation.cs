@@ -112,15 +112,26 @@ namespace Strand7_Steel_Section_Sizing
                     iList.Add(PropNum);
                 }
             }
+
+            //List<int> allProps = new List<int>();
+            //for (int i = 0;i< LastProperty[St7.ipBeamPropTotal];i++;)
+            //{ allProps.Add()}
+
+            //string ss = "";
             for (int i = 0; i < iList.Count; i++)
             {
-                if (iList[i] <= nProps) iList[i] = iList[i] - 1;
-                else
-                {
-                    iList.RemoveAt(i);
-                    i--;
-                }
+                //if (iList[i] <= nProps)
+                //{
+                    iList[i] = iList[i] - 1;
+                    //ss += iList[i] + " ";
+                //}
+                //else
+                //{
+                //    iList.RemoveAt(i);
+                //    i--;
+                //}
             }
+            //MessageBox.Show(ss);
 
             //set beams to biggest sections (to avoid instabilities)
             foreach (int i in iList) { CurrentSectArray[i] = 0; }
@@ -144,12 +155,12 @@ namespace Strand7_Steel_Section_Sizing
                 iErr = St7.St7SetBeamSectionGeometry(1, i + 1, SType[CurrentSectArray[i]], SectionDoubles[CurrentSectArray[i]]);
                 if (CheckiErr(iErr)) { return; };
 
-                stat2 = "setting property " + i.ToString();
+                stat2 = "setting property " + (i+1).ToString();
                 stat3 = "";
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
                 iErr = St7.St7CalculateBeamSectionProperties(1, i + 1, St7.btFalse, St7.btFalse);
-                if (CheckiErr(iErr)) { return; };
+                if (CheckiErr(iErr)) { return; }
             }
             #endregion
 
@@ -562,7 +573,7 @@ namespace Strand7_Steel_Section_Sizing
                             stat3 = "";
                             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                             double def_approx = def_max;
-                            while (def_approx / def_limit > 0.93)
+                            while (def_approx / def_limit > 0.90)
                             {
                                 double[] group_def_current = new double[nProps];
                                 double[] group_mass_current = new double[nProps];
