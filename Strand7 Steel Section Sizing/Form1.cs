@@ -111,7 +111,7 @@ namespace Strand7_Steel_Section_Sizing
             { MessageBox.Show("Please provide list of result case numbers to operate on."); }
             else
             {
-                List<int> sPropList = new List<int>();
+                List<List<int>> sPropList = new List<List<int>>();
                 List<int> ResList_stress = new List<int>();
                 List<int> ResList_def = new List<int>();
                 double def_limit = 0;
@@ -119,7 +119,7 @@ namespace Strand7_Steel_Section_Sizing
                 string error = "";
                 bool flag = true;
 
-                if (!ConvertString(SecListBox.Text, ref sPropList, ref error))
+                if (!ConvertStringArray(SecListBox.Text, ref sPropList, ref error))
                 {
                     MessageBox.Show(error);
                     return;
@@ -176,6 +176,7 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(ResList_def);
                     args.Add(def_limit);
                     args.Add(Stress_checkbox.Checked);
+
                     try { worker.RunWorkerAsync(args); }
                     catch { }
                 }
@@ -249,17 +250,43 @@ namespace Strand7_Steel_Section_Sizing
             iList = sList;
             return flag;
         }
+        bool ConvertStringArray(string s_in, ref List<List<int>> iList, ref string error)
+        {
+            List<List<int>> sList = new List<List<int>>();
+            char[] splitter = { ';' };
+            s_in = string.Join("", s_in.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries)); //removing whitespace
+            string[] str = s_in.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
 
+            foreach (string s in str)
+            {
+                string err = "";
+                List<int> iList_temp = new List<int>();
+                if (!ConvertString(s, ref iList_temp, ref err))
+                {
+                    error = err;
+                    return false;
+                }
+                else
+                { sList.Add(iList_temp); }
+            }
+            iList = sList;
+
+            error = "";
+            return true;
+
+        }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Properties.Settings.Default.sections_list = this.SecListBox.Text;
-            Properties.Settings.Default.def_cases = this.DefCaseBox.Text;
-            Properties.Settings.Default.stress_cases = this.StressCaseBox.Text;
-            Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
-            Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
-            Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
+            worker.Dispose();
 
-            Properties.Settings.Default.Save();
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list = this.SecListBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases = this.DefCaseBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases = this.StressCaseBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
+
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
         }
     }
 }

@@ -33,22 +33,22 @@
             this.worker = new System.ComponentModel.BackgroundWorker();
             this.CancelButton = new System.Windows.Forms.Button();
             this.BrowseButton = new System.Windows.Forms.Button();
-            this.SecListBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
-            this.StressCaseBox = new System.Windows.Forms.TextBox();
             this.Button_LSA = new System.Windows.Forms.RadioButton();
             this.Button_NLA = new System.Windows.Forms.RadioButton();
-            this.Def_checkbox = new System.Windows.Forms.CheckBox();
-            this.DefCaseBox = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
-            this.DefLimitBox = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
-            this.Stress_checkbox = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.outputBox = new System.Windows.Forms.TextBox();
+            this.SecListBox = new System.Windows.Forms.TextBox();
+            this.Def_checkbox = new System.Windows.Forms.CheckBox();
+            this.DefCaseBox = new System.Windows.Forms.TextBox();
+            this.DefLimitBox = new System.Windows.Forms.TextBox();
+            this.Stress_checkbox = new System.Windows.Forms.CheckBox();
+            this.StressCaseBox = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -101,15 +101,6 @@
             this.BrowseButton.UseVisualStyleBackColor = true;
             this.BrowseButton.Click += new System.EventHandler(this.Browse_Click);
             // 
-            // SecListBox
-            // 
-            this.SecListBox.Location = new System.Drawing.Point(6, 62);
-            this.SecListBox.Margin = new System.Windows.Forms.Padding(2);
-            this.SecListBox.Name = "SecListBox";
-            this.SecListBox.Size = new System.Drawing.Size(264, 20);
-            this.SecListBox.TabIndex = 3;
-            this.SecListBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list;
-            // 
             // label3
             // 
             this.label3.AutoSize = true;
@@ -129,15 +120,6 @@
             this.label4.Size = new System.Drawing.Size(213, 13);
             this.label4.TabIndex = 6;
             this.label4.Text = "Result cases to include (e.g. \"1, 3-5\", \"all\"):";
-            // 
-            // StressCaseBox
-            // 
-            this.StressCaseBox.Location = new System.Drawing.Point(6, 48);
-            this.StressCaseBox.Margin = new System.Windows.Forms.Padding(2);
-            this.StressCaseBox.Name = "StressCaseBox";
-            this.StressCaseBox.Size = new System.Drawing.Size(264, 20);
-            this.StressCaseBox.TabIndex = 4;
-            this.StressCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases;
             // 
             // Button_LSA
             // 
@@ -164,28 +146,6 @@
             this.Button_NLA.Text = "Non-linear static";
             this.Button_NLA.UseVisualStyleBackColor = true;
             // 
-            // Def_checkbox
-            // 
-            this.Def_checkbox.AutoSize = true;
-            this.Def_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def;
-            this.Def_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.Def_checkbox.Location = new System.Drawing.Point(6, 17);
-            this.Def_checkbox.Margin = new System.Windows.Forms.Padding(2);
-            this.Def_checkbox.Name = "Def_checkbox";
-            this.Def_checkbox.Size = new System.Drawing.Size(120, 17);
-            this.Def_checkbox.TabIndex = 5;
-            this.Def_checkbox.Text = "Optimise deflections";
-            this.Def_checkbox.UseVisualStyleBackColor = true;
-            // 
-            // DefCaseBox
-            // 
-            this.DefCaseBox.Location = new System.Drawing.Point(6, 57);
-            this.DefCaseBox.Margin = new System.Windows.Forms.Padding(2);
-            this.DefCaseBox.Name = "DefCaseBox";
-            this.DefCaseBox.Size = new System.Drawing.Size(264, 20);
-            this.DefCaseBox.TabIndex = 7;
-            this.DefCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases;
-            // 
             // label5
             // 
             this.label5.AutoSize = true;
@@ -196,15 +156,6 @@
             this.label5.TabIndex = 12;
             this.label5.Text = "Deflection cases to include (e.g. \"1, 3-5\", \"all\"):";
             // 
-            // DefLimitBox
-            // 
-            this.DefLimitBox.Location = new System.Drawing.Point(181, 15);
-            this.DefLimitBox.Margin = new System.Windows.Forms.Padding(2);
-            this.DefLimitBox.Name = "DefLimitBox";
-            this.DefLimitBox.Size = new System.Drawing.Size(59, 20);
-            this.DefLimitBox.TabIndex = 6;
-            this.DefLimitBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim;
-            // 
             // label6
             // 
             this.label6.AutoSize = true;
@@ -214,18 +165,6 @@
             this.label6.Size = new System.Drawing.Size(23, 13);
             this.label6.TabIndex = 14;
             this.label6.Text = "mm";
-            // 
-            // Stress_checkbox
-            // 
-            this.Stress_checkbox.AutoSize = true;
-            this.Stress_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress;
-            this.Stress_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.Stress_checkbox.Location = new System.Drawing.Point(6, 12);
-            this.Stress_checkbox.Name = "Stress_checkbox";
-            this.Stress_checkbox.Size = new System.Drawing.Size(96, 17);
-            this.Stress_checkbox.TabIndex = 15;
-            this.Stress_checkbox.Text = "Optimise stress";
-            this.Stress_checkbox.UseVisualStyleBackColor = true;
             // 
             // groupBox1
             // 
@@ -275,12 +214,73 @@
             this.outputBox.TabIndex = 19;
             this.outputBox.WordWrap = false;
             // 
+            // SecListBox
+            // 
+            this.SecListBox.Location = new System.Drawing.Point(6, 62);
+            this.SecListBox.Margin = new System.Windows.Forms.Padding(2);
+            this.SecListBox.Name = "SecListBox";
+            this.SecListBox.Size = new System.Drawing.Size(264, 20);
+            this.SecListBox.TabIndex = 3;
+            this.SecListBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list;
+            // 
+            // Def_checkbox
+            // 
+            this.Def_checkbox.AutoSize = true;
+            this.Def_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def;
+            this.Def_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.Def_checkbox.Location = new System.Drawing.Point(6, 17);
+            this.Def_checkbox.Margin = new System.Windows.Forms.Padding(2);
+            this.Def_checkbox.Name = "Def_checkbox";
+            this.Def_checkbox.Size = new System.Drawing.Size(120, 17);
+            this.Def_checkbox.TabIndex = 5;
+            this.Def_checkbox.Text = "Optimise deflections";
+            this.Def_checkbox.UseVisualStyleBackColor = true;
+            // 
+            // DefCaseBox
+            // 
+            this.DefCaseBox.Location = new System.Drawing.Point(6, 57);
+            this.DefCaseBox.Margin = new System.Windows.Forms.Padding(2);
+            this.DefCaseBox.Name = "DefCaseBox";
+            this.DefCaseBox.Size = new System.Drawing.Size(264, 20);
+            this.DefCaseBox.TabIndex = 7;
+            this.DefCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases;
+            // 
+            // DefLimitBox
+            // 
+            this.DefLimitBox.Location = new System.Drawing.Point(181, 15);
+            this.DefLimitBox.Margin = new System.Windows.Forms.Padding(2);
+            this.DefLimitBox.Name = "DefLimitBox";
+            this.DefLimitBox.Size = new System.Drawing.Size(59, 20);
+            this.DefLimitBox.TabIndex = 6;
+            this.DefLimitBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim;
+            // 
+            // Stress_checkbox
+            // 
+            this.Stress_checkbox.AutoSize = true;
+            this.Stress_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress;
+            this.Stress_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.Stress_checkbox.Location = new System.Drawing.Point(6, 12);
+            this.Stress_checkbox.Name = "Stress_checkbox";
+            this.Stress_checkbox.Size = new System.Drawing.Size(96, 17);
+            this.Stress_checkbox.TabIndex = 15;
+            this.Stress_checkbox.Text = "Optimise stress";
+            this.Stress_checkbox.UseVisualStyleBackColor = true;
+            // 
+            // StressCaseBox
+            // 
+            this.StressCaseBox.Location = new System.Drawing.Point(6, 48);
+            this.StressCaseBox.Margin = new System.Windows.Forms.Padding(2);
+            this.StressCaseBox.Name = "StressCaseBox";
+            this.StressCaseBox.Size = new System.Drawing.Size(264, 20);
+            this.StressCaseBox.TabIndex = 4;
+            this.StressCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases;
+            // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(715, 337);
+            this.ClientSize = new System.Drawing.Size(715, 342);
             this.Controls.Add(this.outputBox);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
