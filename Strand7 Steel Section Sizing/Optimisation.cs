@@ -36,7 +36,7 @@ namespace Strand7_Steel_Section_Sizing
 
             //optimisation settings
             double UtilMax = 0.99;
-            double DesignStress = 355;//157.9;//355/1.1;
+            double DesignStress = stress_limit;//157.9;//355/1.1;
             DampingUp = 1.0;//0.6;
             DampingDown = 1.0;//0.4;
             int iter_max = 50;
@@ -783,6 +783,7 @@ namespace Strand7_Steel_Section_Sizing
             }
             iErr = St7.St7DeleteLoadCase(1, virtual_case);
             if (CheckiErr(iErr)) { return; }
+            RunSolver(sCase, ref NumPrimary, ref NumSecondary);
             iErr = St7.St7SaveFileTo(1, optFolder + @"/Optimised.st7");
             if (CheckiErr(iErr)) { return; }
             iErr = St7.St7SaveFileTo(1, sSt7OptimisedPath);
@@ -814,6 +815,7 @@ namespace Strand7_Steel_Section_Sizing
             ResList_def = (List<int>)args[5];
             def_limit = (double)args[6];
             optStresses = (bool)args[7];
+            stress_limit = (double)args[8];
         }
         private static void CollectSections()
         {
@@ -1029,6 +1031,7 @@ namespace Strand7_Steel_Section_Sizing
         private static bool optDeflections = new bool();
         private static bool optStresses = new bool();
         private static double def_limit = new double();
+        private static double stress_limit = new double();
 
         private static string sSt7ResPath = "";
         private static string sSt7LSAPath = "";

@@ -115,6 +115,7 @@ namespace Strand7_Steel_Section_Sizing
                 List<int> ResList_stress = new List<int>();
                 List<int> ResList_def = new List<int>();
                 double def_limit = 0;
+                double stress_limit = 0;
 
                 string error = "";
                 bool flag = true;
@@ -124,10 +125,18 @@ namespace Strand7_Steel_Section_Sizing
                     MessageBox.Show(error);
                     return;
                 }
-                if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
+                if (Stress_checkbox.Checked)
                 {
-                    MessageBox.Show(error);
-                    return;
+                    if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
+                    {
+                        MessageBox.Show(error);
+                        return;
+                    }
+                    if (!double.TryParse(StressLimitBox.Text, out stress_limit) || stress_limit <= 0)
+                    {
+                        MessageBox.Show("input for stress limit is not valid");
+                        return;
+                    }
                 }
                 if (Def_checkbox.Checked)
                 {
@@ -176,6 +185,7 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(ResList_def);
                     args.Add(def_limit);
                     args.Add(Stress_checkbox.Checked);
+                    args.Add(stress_limit);
 
                     try { worker.RunWorkerAsync(args); }
                     catch { }
@@ -285,8 +295,14 @@ namespace Strand7_Steel_Section_Sizing
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_lim = this.StressLimitBox.Text;
 
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
+        }
+
+        private void label7_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

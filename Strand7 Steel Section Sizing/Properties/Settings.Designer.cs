@@ -106,5 +106,17 @@ namespace Strand7_Steel_Section_Sizing.Properties {
                 this["opt_stress"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("355")]
+        public string stress_lim {
+            get {
+                return ((string)(this["stress_lim"]));
+            }
+            set {
+                this["stress_lim"] = value;
+            }
+        }
     }
 }
