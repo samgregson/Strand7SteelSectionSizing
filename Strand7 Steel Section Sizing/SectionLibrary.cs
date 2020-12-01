@@ -97,16 +97,17 @@ namespace Strand7_Steel_Section_Sizing
             if (A_x_stress < 0)
             {
                 //### Buckling Check ####
-                double E_s = 210000;
-                double f_y = 355;
-                double alpha_c = 0.49;
-                double lambda = Math.Sqrt(Math.Pow(Length, 2) * s.A / Math.Min(s.I11, s.I22));
-                double N_cr = Math.Pow(Math.PI, 2) * E_s * s.A / Math.Pow(lambda, 2);
-                double lambda_nd = Math.Max(0.2, Math.Sqrt(s.A * f_y / N_cr));
-                double phi_m = 0.5 * (1 + alpha_c * (lambda_nd - 0.2) + Math.Pow(lambda_nd, 2));
-                double chi_n = 1 / (phi_m + Math.Sqrt(Math.Pow(phi_m, 2) - Math.Pow(lambda_nd, 2)));
+                //double E_s = 210000;
+                //double f_y = 355;
+                //double alpha_c = 0.49;
+                //double lambda = Math.Sqrt(Math.Pow(Length, 2) * s.A / Math.Min(s.I11, s.I22));
+                //double N_cr = Math.Pow(Math.PI, 2) * E_s * s.A / Math.Pow(lambda, 2);
+                //double lambda_nd = Math.Max(0.2, Math.Sqrt(s.A * f_y / N_cr));
+                //double phi_m = 0.5 * (1 + alpha_c * (lambda_nd - 0.2) + Math.Pow(lambda_nd, 2));
+                //double chi_n = 1 / (phi_m + Math.Sqrt(Math.Pow(phi_m, 2) - Math.Pow(lambda_nd, 2)));
 
-                Stress = Math.Abs(A_x_stress) / s.A / chi_n + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+                //Stress = Math.Abs(A_x_stress) / s.A / chi_n + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+                Stress = Math.Abs(A_x_stress) / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
             }
             else
             {

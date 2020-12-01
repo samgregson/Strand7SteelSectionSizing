@@ -365,11 +365,11 @@ namespace Strand7_Steel_Section_Sizing
                                 double[] BeamResults = new double[St7.kMaxBeamResult];
                                 iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, b.Number, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
                                 if (CheckiErr(iErr)) { return; }
-                                double A_x_max = BeamResults[St7.ipBeamAxialF];
-                                double M_11_max = Math.Abs(BeamResults[St7.ipBeamBM2]);
-                                double M_22_max = Math.Abs(BeamResults[St7.ipBeamBM1]);
+                                double A_x_max = 0;
+                                double M_11_max = 0;
+                                double M_22_max = 0;
 
-                                for (int j = 1; j < NumPoints; j++)
+                                for (int j = 0; j < NumPoints; j++)
                                 {
                                     double A_x_max_j = BeamResults[j * NumColumns + St7.ipBeamAxialF];
                                     double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
@@ -379,10 +379,9 @@ namespace Strand7_Steel_Section_Sizing
                                     if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
                                 }
 
-                                //if (Math.Abs(A_x_max) > Math.Abs(b.A_x_stress)) { b.A_x_stress = A_x_max; }
-                                b.A_x_stress = Math.Max(b.A_x_stress,A_x_max);
-                                b.M_11_stress = Math.Max(b.M_11_stress,M_11_max);
-                                b.M_22_stress = Math.Max(b.M_22_stress,M_22_max);
+                                if (Math.Abs(A_x_max) > Math.Abs(b.A_x_stress)) { b.A_x_stress = A_x_max; }
+                                if (M_11_max > b.M_11_stress) { b.M_11_stress = M_11_max; }
+                                if (M_22_max > b.M_11_stress) { b.M_11_stress = M_22_max; }
                             }
                         }
 
@@ -567,29 +566,34 @@ namespace Strand7_Steel_Section_Sizing
                                 b.M_22_def = 1;
                             }
 
+                            List<int> cases = new List<int> { virtual_case, def_max_case };
+
                             foreach (Beam b in beams)
                             {
-                                int NumPoints = 0;
-                                int NumColumns = 0;
-                                double[] BeamPos = new double[St7.kMaxBeamResult];
-                                double[] BeamResults = new double[St7.kMaxBeamResult];
-                                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, b.Number, 4, def_max_case, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
-                                if (CheckiErr(iErr)) { return; }
-                                double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
-                                double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
-                                double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
-
-                                for (int j = 1; j < NumPoints; j++)
+                                foreach (int c in cases)
                                 {
-                                    A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
-                                    M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
-                                    M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
-                                }
+                                    int NumPoints = 0;
+                                    int NumColumns = 0;
+                                    double[] BeamPos = new double[St7.kMaxBeamResult];
+                                    double[] BeamResults = new double[St7.kMaxBeamResult];
+                                    iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, b.Number, 8, c, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                    if (CheckiErr(iErr)) { return; }
+                                    double A_x_addition = Math.Abs(BeamResults[St7.ipBeamAxialF]);
+                                    double M_11_addition = Math.Abs(BeamResults[St7.ipBeamBM2]);
+                                    double M_22_addition = Math.Abs(BeamResults[St7.ipBeamBM1]);
 
-                                //Multiply for sensitivity
-                                b.A_x_def *= (A_x_addition / NumPoints);
-                                b.M_11_def *= (M_11_addition / NumPoints);
-                                b.M_22_def *= (M_22_addition / NumPoints);
+                                    for (int j = 1; j < NumPoints; j++)
+                                    {
+                                        A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                                        M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                        M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                    }
+
+                                    //Multiply for sensitivity
+                                    b.A_x_def *= (A_x_addition / NumPoints);
+                                    b.M_11_def *= (M_11_addition / NumPoints);
+                                    b.M_22_def *= (M_22_addition / NumPoints);
+                                }
                             }
                             
                             iErr = St7.St7CloseResultFile(1);
@@ -619,7 +623,7 @@ namespace Strand7_Steel_Section_Sizing
 
                             int counter = 0;
                             
-                            while (def_approx / def_limit > 0.95)
+                            while (def_approx / def_limit > 0.98)
                             {
                                 counter++;
 
@@ -777,7 +781,8 @@ namespace Strand7_Steel_Section_Sizing
                     if (CheckiErr(iErr)) { return; }
                 }
             }
-
+            iErr = St7.St7DeleteLoadCase(1, virtual_case);
+            if (CheckiErr(iErr)) { return; }
             iErr = St7.St7SaveFileTo(1, optFolder + @"/Optimised.st7");
             if (CheckiErr(iErr)) { return; }
             iErr = St7.St7SaveFileTo(1, sSt7OptimisedPath);
