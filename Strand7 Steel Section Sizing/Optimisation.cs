@@ -20,13 +20,12 @@ namespace Strand7_Steel_Section_Sizing
             //#####################################################################################
 
             SetInputs(e);
-            CollectSections();
-            //int nSections = D1.Count;
-
+            
             bool init = true;
             string stat = "Initialising...";
             string stat2 = "opening Strand7 file...";
-            string stat3 = "Optimisation started at: " + DateTime.Now + Environment.NewLine + "Optimising file: " + file;
+            DateTime startTime = DateTime.Now;
+            string stat3 = "Optimisation started at: " + startTime + Environment.NewLine + "Optimising file: " + file;
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
             //#############################################
@@ -51,6 +50,8 @@ namespace Strand7_Steel_Section_Sizing
             string optFolder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), "Optimisation results");
             System.IO.Directory.CreateDirectory(optFolder);
             string sOutPath = System.IO.Path.Combine(optFolder, "Section changes.txt");
+            CollectSections(System.IO.Path.GetDirectoryName(file));
+
             try { System.IO.File.Delete(sOutPath); }
             catch { }
             sSt7LSAPath = sBaseFile + " - optimised.LSA";
@@ -296,7 +297,7 @@ namespace Strand7_Steel_Section_Sizing
                 looping = true;
                 stat = "Iteration: " + iter.ToString();
                 stat2 = "";
-                stat3 = Environment.NewLine + "ITERATION: " + iter.ToString(); ;
+                stat3 = Environment.NewLine + "########## ITERATION: " + iter.ToString() + " ##########" ;
                 if (changed > 0) { stat2 = changed.ToString() + " changes in previous iteration"; }
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
@@ -311,6 +312,9 @@ namespace Strand7_Steel_Section_Sizing
                 ///     iterate
                 if (optStresses)
                 {
+                    stat3 = Environment.NewLine + "########## Optimising Stresses: ##########";
+                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
                     for (int iter_stress = 1; iter_stress < 50; iter_stress++)
                     {
                         foreach (Beam b in beams)
@@ -465,6 +469,9 @@ namespace Strand7_Steel_Section_Sizing
                 ///     iterate
                 if (optDeflections)
                 {
+                    stat3 = Environment.NewLine + "########## Optimising Deflections: ##########";
+                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
                     for (int iter_def = 1; iter_def < 50; iter_def++)
                     {
                         int changes_def = 0;
@@ -523,8 +530,8 @@ namespace Strand7_Steel_Section_Sizing
                             }
                         }
 
-                        stat2 = String.Format("max def: {0:0.0}mm", def_max);
-                        stat3 = "";
+                        stat2 = String.Format("     current max def: {0:0.0}mm", def_max);
+                        stat3 = stat2;
                         string sDef = stat2;
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                         iErr = St7.St7CloseResultFile(1);
@@ -622,8 +629,9 @@ namespace Strand7_Steel_Section_Sizing
                             //{ p.TempSectionInt = p.CurrentSectionInt; }
 
                             int counter = 0;
-                            
-                            while (def_approx / def_limit > 0.98)
+                            double lambda = 0.4;
+                            double def_target = def_limit + lambda * (def_max - def_limit);
+                            while (def_approx > def_target)
                             {
                                 counter++;
 
@@ -699,7 +707,7 @@ namespace Strand7_Steel_Section_Sizing
                                 Math.DivRem(counter, 50, out rem);
                                 if (rem == 10)
                                 {
-                                    stat3 = String.Format("def_approx = {0:0.00}mm, best_property = {1}, best_section = {2}", def_approx, best_property, best_section);
+                                    stat3 = String.Format("     def_approx = {0:0.00}mm", def_approx);
                                     worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                                 }
 
@@ -733,8 +741,8 @@ namespace Strand7_Steel_Section_Sizing
                         string sMass = stat2;
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
-                        if (changes_def > 0) { stat2 = String.Format("def iteration {0}: {1} section changes", iter_def, changes_def) +", "+ sMass + ", " + sDef; }
-                        else { stat2 = String.Format("def iteration {0}: sizing for deflection converged", iter_def) + ", " + sMass + ", " + sDef; }
+                        if (changes_def > 0) { stat2 = String.Format("def iteration {0}: {1} section changes", iter_def, changes_def) +", "+ sMass; }
+                        else { stat2 = String.Format("def iteration {0}: sizing for deflection converged", iter_def) + ", " + sMass; }
                         stat3 = stat2;
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
@@ -795,7 +803,11 @@ namespace Strand7_Steel_Section_Sizing
 
             stat = "complete";
             stat2 = "";
-            stat3 = Environment.NewLine + "Optimisation completed at: " + DateTime.Now;
+            DateTime endTime = DateTime.Now;
+            TimeSpan timeDifference = endTime.Subtract(startTime);
+            double timeMinutes = Math.Floor(timeDifference.TotalMinutes);
+            double timeSeconds = timeDifference.TotalSeconds - timeMinutes * 60;
+            stat3 = Environment.NewLine + "Optimisation completed at: " + endTime + ", in " + String.Format("{0:0} minutes {1:0.0} seconds", timeMinutes,timeSeconds);
             init = false;
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
@@ -817,12 +829,12 @@ namespace Strand7_Steel_Section_Sizing
             optStresses = (bool)args[7];
             stress_limit = (double)args[8];
         }
-        private static void CollectSections()
+        private static void CollectSections(string sFolder)
         {
             for (int g = 0; g < iList.Count; g++)
             {
                 int iErr;
-                string filePath = System.IO.Path.GetTempPath() + "Section_CSV" + (g+1).ToString() + ".txt";
+                string filePath = System.IO.Path.Combine(sFolder,"Section_CSV" + (g+1).ToString() + ".txt");
                 if (!System.IO.File.Exists(filePath))
                 {
                     MessageBox.Show("section data file does not exist");

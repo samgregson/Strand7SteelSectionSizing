@@ -304,5 +304,20 @@ namespace Strand7_Steel_Section_Sizing
         {
 
         }
+
+        private void toolTip1_Popup(object sender, PopupEventArgs e)
+        {
+
+        }
+
+        private void Button_NLA_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void StressLimitBox_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

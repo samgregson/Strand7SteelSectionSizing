@@ -120,6 +120,37 @@
   <metadata name="worker.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="StressQM.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAL
+        EgAACxIB0t1+/AAAAMRJREFUKFNj+P//PxgzFO5RAOIFQPwBiP9DMYgNElOAq4MqNoBK/u/Y+wAoBAG7
+        b779r9RyFKbRACjEADMZrLh8822wQpfp58A23H3zDawJxIaqUQBpAFkJFgRpOPP4E0wBmA3SBOMD8QKQ
+        BrDp6BjmNJAhSOIfQBqQBcA4bdV1bIohGEMAiFddeInuFAQGEhhOCl1wCYzRxYEY7CS4p2EYFDI4bAB7
+        Gh6sBDAkWIF+A2mCRxwODJKDRByIgGoiImn8ZwAA6WlT6uQ1CAkAAAAASUVORK5CYII=
+</value>
+  </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>106, 17</value>
+  </metadata>
+  <data name="DeflectionQM.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAL
+        EgAACxIB0t1+/AAAAMRJREFUKFNj+P//PxgzFO5RAOIFQPwBiP9DMYgNElOAq4MqNoBK/u/Y+wAoBAG7
+        b779r9RyFKbRACjEADMZrLh8822wQpfp58A23H3zDawJxIaqUQBpAFkJFgRpOPP4E0wBmA3SBOMD8QKQ
+        BrDp6BjmNJAhSOIfQBqQBcA4bdV1bIohGEMAiFddeInuFAQGEhhOCl1wCYzRxYEY7CS4p2EYFDI4bAB7
+        Gh6sBDAkWIF+A2mCRxwODJKDRByIgGoiImn8ZwAA6WlT6uQ1CAkAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="PropertiesQM.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAL
+        EgAACxIB0t1+/AAAAMRJREFUKFNj+P//PxgzFO5RAOIFQPwBiP9DMYgNElOAq4MqNoBK/u/Y+wAoBAG7
+        b779r9RyFKbRACjEADMZrLh8822wQpfp58A23H3zDawJxIaqUQBpAFkJFgRpOPP4E0wBmA3SBOMD8QKQ
+        BrDp6BjmNJAhSOIfQBqQBcA4bdV1bIohGEMAiFddeInuFAQGEhhOCl1wCYzRxYEY7CS4p2EYFDI4bAB7
+        Gh6sBDAkWIF+A2mCRxwODJKDRByIgGoiImn8ZwAA6WlT6uQ1CAkAAAAASUVORK5CYII=
+</value>
+  </data>
   <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>34</value>
   </metadata>

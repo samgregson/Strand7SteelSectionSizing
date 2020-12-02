@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.worker = new System.ComponentModel.BackgroundWorker();
@@ -40,31 +42,37 @@
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.StressQM = new System.Windows.Forms.PictureBox();
             this.label7 = new System.Windows.Forms.Label();
             this.StressLimitBox = new System.Windows.Forms.TextBox();
             this.Stress_checkbox = new System.Windows.Forms.CheckBox();
             this.StressCaseBox = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.DeflectionQM = new System.Windows.Forms.PictureBox();
             this.Def_checkbox = new System.Windows.Forms.CheckBox();
             this.DefCaseBox = new System.Windows.Forms.TextBox();
             this.DefLimitBox = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.PropertiesQM = new System.Windows.Forms.PictureBox();
             this.SecListBox = new System.Windows.Forms.TextBox();
             this.outputBox = new System.Windows.Forms.TextBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DeflectionQM)).BeginInit();
             this.groupBox3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(10, 13);
+            this.label1.Location = new System.Drawing.Point(14, 280);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(105, 13);
+            this.label1.Size = new System.Drawing.Size(0, 13);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Select a Strand7 file.";
             // 
             // label2
             // 
@@ -83,23 +91,25 @@
             // 
             // CancelButton
             // 
-            this.CancelButton.Location = new System.Drawing.Point(226, 333);
+            this.CancelButton.AutoSize = true;
+            this.CancelButton.Location = new System.Drawing.Point(226, 329);
             this.CancelButton.Margin = new System.Windows.Forms.Padding(2);
             this.CancelButton.Name = "CancelButton";
-            this.CancelButton.Size = new System.Drawing.Size(61, 19);
-            this.CancelButton.TabIndex = 9;
+            this.CancelButton.Size = new System.Drawing.Size(61, 23);
+            this.CancelButton.TabIndex = 11;
             this.CancelButton.Text = "Cancel";
             this.CancelButton.UseVisualStyleBackColor = true;
             this.CancelButton.Click += new System.EventHandler(this.Cancel_Click);
             // 
             // BrowseButton
             // 
-            this.BrowseButton.Location = new System.Drawing.Point(166, 333);
+            this.BrowseButton.AutoSize = true;
+            this.BrowseButton.Location = new System.Drawing.Point(95, 329);
             this.BrowseButton.Margin = new System.Windows.Forms.Padding(2);
             this.BrowseButton.Name = "BrowseButton";
-            this.BrowseButton.Size = new System.Drawing.Size(56, 19);
-            this.BrowseButton.TabIndex = 8;
-            this.BrowseButton.Text = "Browse";
+            this.BrowseButton.Size = new System.Drawing.Size(127, 23);
+            this.BrowseButton.TabIndex = 10;
+            this.BrowseButton.Text = "Select file and optimise";
             this.BrowseButton.UseVisualStyleBackColor = true;
             this.BrowseButton.Click += new System.EventHandler(this.Browse_Click);
             // 
@@ -109,9 +119,9 @@
             this.label3.Location = new System.Drawing.Point(3, 45);
             this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(203, 13);
+            this.label3.Size = new System.Drawing.Size(110, 13);
             this.label3.TabIndex = 5;
-            this.label3.Text = "Properties to optimise (e.g. \"1, 3-5\", \"all\"):";
+            this.label3.Text = "Properties to optimise:";
             // 
             // label4
             // 
@@ -119,9 +129,9 @@
             this.label4.Location = new System.Drawing.Point(3, 32);
             this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(213, 13);
+            this.label4.Size = new System.Drawing.Size(120, 13);
             this.label4.TabIndex = 6;
-            this.label4.Text = "Result cases to include (e.g. \"1, 3-5\", \"all\"):";
+            this.label4.Text = "Result cases to include:";
             // 
             // Button_LSA
             // 
@@ -143,10 +153,11 @@
             this.Button_NLA.Margin = new System.Windows.Forms.Padding(2);
             this.Button_NLA.Name = "Button_NLA";
             this.Button_NLA.Size = new System.Drawing.Size(101, 17);
-            this.Button_NLA.TabIndex = 2;
+            this.Button_NLA.TabIndex = 1;
             this.Button_NLA.TabStop = true;
             this.Button_NLA.Text = "Non-linear static";
             this.Button_NLA.UseVisualStyleBackColor = true;
+            this.Button_NLA.CheckedChanged += new System.EventHandler(this.Button_NLA_CheckedChanged);
             // 
             // label5
             // 
@@ -154,14 +165,14 @@
             this.label5.Location = new System.Drawing.Point(2, 37);
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(231, 13);
+            this.label5.Size = new System.Drawing.Size(138, 13);
             this.label5.TabIndex = 12;
-            this.label5.Text = "Deflection cases to include (e.g. \"1, 3-5\", \"all\"):";
+            this.label5.Text = "Deflection cases to include:";
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(244, 18);
+            this.label6.Location = new System.Drawing.Point(193, 18);
             this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(23, 13);
@@ -170,21 +181,33 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.StressQM);
             this.groupBox1.Controls.Add(this.label7);
             this.groupBox1.Controls.Add(this.StressLimitBox);
             this.groupBox1.Controls.Add(this.Stress_checkbox);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.StressCaseBox);
-            this.groupBox1.Location = new System.Drawing.Point(11, 160);
+            this.groupBox1.Location = new System.Drawing.Point(11, 107);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(276, 76);
             this.groupBox1.TabIndex = 16;
             this.groupBox1.TabStop = false;
             // 
+            // StressQM
+            // 
+            this.StressQM.Image = ((System.Drawing.Image)(resources.GetObject("StressQM.Image")));
+            this.StressQM.Location = new System.Drawing.Point(255, 14);
+            this.StressQM.Name = "StressQM";
+            this.StressQM.Size = new System.Drawing.Size(12, 12);
+            this.StressQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.StressQM.TabIndex = 21;
+            this.StressQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.StressQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.stress_Tooltip);
+            // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(241, 16);
+            this.label7.Location = new System.Drawing.Point(193, 13);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(29, 13);
             this.label7.TabIndex = 17;
@@ -193,11 +216,12 @@
             // 
             // StressLimitBox
             // 
-            this.StressLimitBox.Location = new System.Drawing.Point(181, 12);
+            this.StressLimitBox.Location = new System.Drawing.Point(128, 10);
             this.StressLimitBox.Name = "StressLimitBox";
             this.StressLimitBox.Size = new System.Drawing.Size(59, 20);
-            this.StressLimitBox.TabIndex = 16;
+            this.StressLimitBox.TabIndex = 5;
             this.StressLimitBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_lim;
+            this.StressLimitBox.TextChanged += new System.EventHandler(this.StressLimitBox_TextChanged);
             // 
             // Stress_checkbox
             // 
@@ -207,7 +231,7 @@
             this.Stress_checkbox.Location = new System.Drawing.Point(6, 12);
             this.Stress_checkbox.Name = "Stress_checkbox";
             this.Stress_checkbox.Size = new System.Drawing.Size(96, 17);
-            this.Stress_checkbox.TabIndex = 15;
+            this.Stress_checkbox.TabIndex = 4;
             this.Stress_checkbox.Text = "Optimise stress";
             this.Stress_checkbox.UseVisualStyleBackColor = true;
             // 
@@ -217,21 +241,33 @@
             this.StressCaseBox.Margin = new System.Windows.Forms.Padding(2);
             this.StressCaseBox.Name = "StressCaseBox";
             this.StressCaseBox.Size = new System.Drawing.Size(264, 20);
-            this.StressCaseBox.TabIndex = 4;
+            this.StressCaseBox.TabIndex = 6;
             this.StressCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases;
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.DeflectionQM);
             this.groupBox2.Controls.Add(this.Def_checkbox);
             this.groupBox2.Controls.Add(this.DefCaseBox);
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label6);
             this.groupBox2.Controls.Add(this.DefLimitBox);
-            this.groupBox2.Location = new System.Drawing.Point(11, 242);
+            this.groupBox2.Location = new System.Drawing.Point(11, 184);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(276, 86);
             this.groupBox2.TabIndex = 17;
             this.groupBox2.TabStop = false;
+            // 
+            // DeflectionQM
+            // 
+            this.DeflectionQM.Image = ((System.Drawing.Image)(resources.GetObject("DeflectionQM.Image")));
+            this.DeflectionQM.Location = new System.Drawing.Point(255, 19);
+            this.DeflectionQM.Name = "DeflectionQM";
+            this.DeflectionQM.Size = new System.Drawing.Size(12, 12);
+            this.DeflectionQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.DeflectionQM.TabIndex = 22;
+            this.DeflectionQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.DeflectionQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.def_Tooltip);
             // 
             // Def_checkbox
             // 
@@ -242,7 +278,7 @@
             this.Def_checkbox.Margin = new System.Windows.Forms.Padding(2);
             this.Def_checkbox.Name = "Def_checkbox";
             this.Def_checkbox.Size = new System.Drawing.Size(120, 17);
-            this.Def_checkbox.TabIndex = 5;
+            this.Def_checkbox.TabIndex = 7;
             this.Def_checkbox.Text = "Optimise deflections";
             this.Def_checkbox.UseVisualStyleBackColor = true;
             // 
@@ -252,29 +288,41 @@
             this.DefCaseBox.Margin = new System.Windows.Forms.Padding(2);
             this.DefCaseBox.Name = "DefCaseBox";
             this.DefCaseBox.Size = new System.Drawing.Size(264, 20);
-            this.DefCaseBox.TabIndex = 7;
+            this.DefCaseBox.TabIndex = 9;
             this.DefCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases;
             // 
             // DefLimitBox
             // 
-            this.DefLimitBox.Location = new System.Drawing.Point(181, 15);
+            this.DefLimitBox.Location = new System.Drawing.Point(130, 15);
             this.DefLimitBox.Margin = new System.Windows.Forms.Padding(2);
             this.DefLimitBox.Name = "DefLimitBox";
             this.DefLimitBox.Size = new System.Drawing.Size(59, 20);
-            this.DefLimitBox.TabIndex = 6;
+            this.DefLimitBox.TabIndex = 8;
             this.DefLimitBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim;
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.PropertiesQM);
             this.groupBox3.Controls.Add(this.Button_LSA);
             this.groupBox3.Controls.Add(this.SecListBox);
             this.groupBox3.Controls.Add(this.label3);
             this.groupBox3.Controls.Add(this.Button_NLA);
-            this.groupBox3.Location = new System.Drawing.Point(11, 61);
+            this.groupBox3.Location = new System.Drawing.Point(11, 8);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(276, 98);
             this.groupBox3.TabIndex = 18;
             this.groupBox3.TabStop = false;
+            // 
+            // PropertiesQM
+            // 
+            this.PropertiesQM.Image = ((System.Drawing.Image)(resources.GetObject("PropertiesQM.Image")));
+            this.PropertiesQM.Location = new System.Drawing.Point(255, 21);
+            this.PropertiesQM.Name = "PropertiesQM";
+            this.PropertiesQM.Size = new System.Drawing.Size(12, 12);
+            this.PropertiesQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.PropertiesQM.TabIndex = 20;
+            this.PropertiesQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.PropertiesQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.prop_Tooltip);
             // 
             // SecListBox
             // 
@@ -294,8 +342,18 @@
             this.outputBox.ReadOnly = true;
             this.outputBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.outputBox.Size = new System.Drawing.Size(473, 339);
-            this.outputBox.TabIndex = 19;
+            this.outputBox.TabIndex = 12;
+            this.outputBox.TabStop = false;
             this.outputBox.WordWrap = false;
+            // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 15000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.IsBalloon = true;
+            this.toolTip1.ReshowDelay = 100;
+            this.toolTip1.ShowAlways = true;
+            this.toolTip1.Popup += new System.Windows.Forms.PopupEventHandler(this.toolTip1_Popup);
             // 
             // Form1
             // 
@@ -319,10 +377,13 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.StressQM)).EndInit();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DeflectionQM)).EndInit();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -353,6 +414,10 @@
         private System.Windows.Forms.TextBox outputBox;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.TextBox StressLimitBox;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.PictureBox StressQM;
+        private System.Windows.Forms.PictureBox DeflectionQM;
+        private System.Windows.Forms.PictureBox PropertiesQM;
     }
 }
 
