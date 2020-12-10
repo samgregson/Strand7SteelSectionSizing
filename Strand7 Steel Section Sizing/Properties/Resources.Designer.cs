@@ -73,12 +73,26 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Provide a load case or a list of load cases to be considered for stress optimisation.
         ///A dash can be used to indicate a range of cases, e.g. 1-5.
+        ///The load case number is as it appears in the open result file.
+        ///
         ///A deflection limit should be provided in mm.
         ///The deflection optimisation considers the absolute displacement of all nodes.
         /// </summary>
         internal static string def_Tooltip {
             get {
                 return ResourceManager.GetString("def_Tooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Note that the frequency solver should already be set up prior to running the optimisation.
+        ///
+        ///A frequency limit should be provided in Hz.
+        ///The frequency optimisation aims to increase the fundamental mode above the limit provided..
+        /// </summary>
+        internal static string freq_Tooltip {
+            get {
+                return ResourceManager.GetString("freq_Tooltip", resourceCulture);
             }
         }
         
@@ -108,6 +122,8 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Provide a load case or a list of load cases to be considered for stress optimisation.
         ///A dash can be used to indicate a range of cases, e.g. 1-5.
+        ///The load case number is as it appears in the open result file.
+        ///
         ///A stress limit should be provided in MPa..
         /// </summary>
         internal static string stress_Tooltip {

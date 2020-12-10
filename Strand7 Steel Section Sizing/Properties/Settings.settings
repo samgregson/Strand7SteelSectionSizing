@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="opt_def" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="def_lim" Type="System.String" Scope="User">
       <Value Profile="(Default)">35</Value>
@@ -21,10 +21,19 @@
       <Value Profile="(Default)">2-21</Value>
     </Setting>
     <Setting Name="opt_stress" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="stress_lim" Type="System.String" Scope="User">
       <Value Profile="(Default)">355</Value>
+    </Setting>
+    <Setting Name="opt_freq" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="freq_case" Type="System.String" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="freq_lim" Type="System.String" Scope="User">
+      <Value Profile="(Default)">2</Value>
     </Setting>
   </Settings>
 </SettingsFile>

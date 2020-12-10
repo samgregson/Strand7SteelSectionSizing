@@ -103,8 +103,11 @@ namespace Strand7_Steel_Section_Sizing
                 beamProperties[p] = new BeamProperty(p+1);
                 if (iList[0].Count == 0)
                 {
-                    beamProperties[p].Group = 0;
-                    beamProperties[p].Optimise = true;
+                    if (PropExistingList.Contains(p + 1))
+                    {
+                        beamProperties[p].Group = 0;
+                        beamProperties[p].Optimise = true;
+                    }
                 }
                 else
                 {
@@ -140,11 +143,7 @@ namespace Strand7_Steel_Section_Sizing
                 return;
             }
 
-            //set beams to biggest sections (to avoid instabilities)
-            foreach (BeamProperty p in beamProperties)
-            {
-                p.CurrentSectionInt = 0;
-            }
+            foreach (BeamProperty p in beamProperties) { p.CurrentSectionInt = 0; }
 
             if (worker.CancellationPending)
             {
@@ -159,6 +158,11 @@ namespace Strand7_Steel_Section_Sizing
             stat2 = "setting initial sections...";
             stat3 = "";
             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+            int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
+            //int[] units = new int[] { St7.luMILLIMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
+            iErr = St7.St7ConvertUnits(1, units);
+            if (CheckiErr(iErr)) { return; };
 
             foreach (BeamProperty prop in beamProperties)
             {
@@ -194,7 +198,6 @@ namespace Strand7_Steel_Section_Sizing
             //########################################################
             //####### Set up List of beams for each property #########
             //########################################################
-
             foreach (Beam b in beams)
             {
                 int PropNum = 0;
@@ -222,9 +225,6 @@ namespace Strand7_Steel_Section_Sizing
                 return;
             }
 
-            int[] units = new int[] { St7.luMILLIMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
-            iErr = St7.St7ConvertUnits(1, units);
-            if (CheckiErr(iErr)) { return; };
             iErr = St7.St7SaveFileTo(1, optFolder + @"\iter 0.st7");
             if (CheckiErr(iErr)) { return; };
 
@@ -258,7 +258,7 @@ namespace Strand7_Steel_Section_Sizing
             {
                 for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_def.Add(i);
             }
-            if (optDeflections)
+            if (optDeflections || optFrequency)
             {
                 //add 1 to cases as virtual load case will be created
                 for (int i = 0; i < ResList_stress.Count; i++)
@@ -272,16 +272,24 @@ namespace Strand7_Steel_Section_Sizing
                     { ResList_def[i]++; }
                 }
                 iErr = St7.St7NewLoadCase(1, "Virtual Load");
-                if (CheckiErr(iErr)) { return; };
+                if (CheckiErr(iErr)) { return; }
                 iErr = St7.St7GetNumLoadCase(1, ref virtual_case);
-                if (CheckiErr(iErr)) { return; };
+                if (CheckiErr(iErr)) { return; }
                 iErr = St7.St7EnableLoadCase(1, virtual_case);
-                if (CheckiErr(iErr)) { return; };
+                if (CheckiErr(iErr)) { return; }
+                if (optFrequency)
+                {   //allow beam forces to be collected
+                    iErr = St7.St7SetEntityResult(1, St7.frBeamForcePattern, St7.btTrue);
+                    if (CheckiErr(iErr)) { return; }
+                }
             }
+
+
 
             init = false;
             bool stress_satisfied = true;
             bool deflections_satisfied = true;
+            bool frequency_satisfied = true;
             bool[] def_governed = new bool[nBeams];
 
             //####################################
@@ -385,7 +393,7 @@ namespace Strand7_Steel_Section_Sizing
 
                                 if (Math.Abs(A_x_max) > Math.Abs(b.A_x_stress)) { b.A_x_stress = A_x_max; }
                                 if (M_11_max > b.M_11_stress) { b.M_11_stress = M_11_max; }
-                                if (M_22_max > b.M_11_stress) { b.M_11_stress = M_22_max; }
+                                if (M_22_max > b.M_22_stress) { b.M_22_stress = M_22_max; }
                             }
                         }
 
@@ -762,6 +770,371 @@ namespace Strand7_Steel_Section_Sizing
                     }
                 }
 
+                //####################################
+                //####### Optimise Frequency #########
+                //####################################
+                //optimise frequency loop
+                ///     collect deflection results
+                ///     apply unit force
+                ///     solve
+                ///     choose sections
+                ///     update sections
+                ///     iterate
+                if (optFrequency)
+                {
+                    stat3 = Environment.NewLine + "########## Optimising Frequency: ##########";
+                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                    for (int iter_freq = 1; iter_freq < 50; iter_freq++)
+                    {
+                        int changes_freq = 0;
+
+                        //solve and open results file
+                        stat2 = "running solver...";
+                        stat3 = "";
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                        RunSolver(Optimisation.Solver.frequency, ref NumPrimary, ref NumSecondary);
+                        if (worker.CancellationPending)
+                        {
+                            iErr = St7.St7CloseResultFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7CloseFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            iErr = St7.St7Release();
+                            if (CheckiErr(iErr)) { return; };
+                            e.Cancel = true;
+                            return;
+                        }
+
+                        //collect worst case deflection
+                        stat2 = "applying virtual load...";
+                        stat3 = "";
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                        double def_max = 0;
+                        int def_node = 0;
+                        int def_max_case = 0;
+                        double[] virtual_load = new double[3];
+
+                        double freq_current = 0;
+                        iErr = St7.St7GetFrequency(1, 1, ref freq_current);
+                        if (CheckiErr(iErr)) { return; }
+
+                        foreach (int ResCase in new List<int> { 1 })
+                        {
+                            stat2 = "collecting deflection results for case no " + ResCase.ToString();
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                            for (int i = 0; i < nNodes; i++)
+                            {
+                                double[] NodeResults = new double[St7.kMaxDisp];
+                                iErr = St7.St7GetNodeResult(1, St7.rtNodeDisp, i + 1, ResCase, NodeResults);
+                                if (CheckiErr(iErr)) { return; };
+
+                                double dx = NodeResults[0];
+                                double dy = NodeResults[1];
+                                double dz = NodeResults[2];
+                                //double def = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                                double def = Math.Max(Math.Max(Math.Abs(dx), Math.Abs(dy)), Math.Abs(dz));
+                                if (def > def_max)
+                                {
+                                    def_max = def;
+                                    def_node = i + 1;
+                                    def_max_case = ResCase;
+                                    virtual_load[0] = dx / def;
+                                    virtual_load[1] = dy / def;
+                                    virtual_load[2] = dz / def;
+                                }
+                            }
+                        }
+
+                        stat2 = String.Format("     current frequency: {0:0.00}Hz", freq_current);
+                        stat3 = stat2;
+                        string sDef = stat2;
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                        iErr = St7.St7CloseResultFile(1);
+                        if (CheckiErr(iErr)) { return; };
+
+                        if (freq_current < freq_limit)
+                        {
+                            //apply unit force to worst case node
+                            iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, virtual_load);
+                            if (CheckiErr(iErr)) { return; };
+
+                            //solve and open results file
+                            stat2 = "running solver...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                            //RunSolver(sCase, ref NumPrimary, ref NumSecondary);
+                            RunSolver(Solver.frequency, ref NumPrimary, ref NumSecondary);
+                            if (worker.CancellationPending)
+                            {
+                                iErr = St7.St7CloseResultFile(1);
+                                if (CheckiErr(iErr)) { return; }
+                                iErr = St7.St7CloseFile(1);
+                                if (CheckiErr(iErr)) { return; }
+                                iErr = St7.St7Release();
+                                if (CheckiErr(iErr)) { return; }
+                                e.Cancel = true;
+                                return;
+                            }
+
+                            //collect results
+                            stat2 = "collecting virtual deflection results...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                            //reset variables
+                            foreach (Beam b in beams)
+                            {
+                                b.A_x_def = 1;
+                                b.M_11_def = 1;
+                                b.M_22_def = 1;
+                            }
+
+                            //List<int> cases = new List<int> { 1 };// virtual_case };//, freq_case };
+
+                            foreach (Beam b in beams)
+                            {
+                                int c = 1;
+                                //foreach (int c in cases)
+                                //{
+                                int NumPoints = 0;
+                                int NumColumns = 0;
+                                double[] BeamPos = new double[St7.kMaxBeamResult];
+                                double[] BeamResults = new double[St7.kMaxBeamResult];
+                                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, b.Number, 8, c, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                if (CheckiErr(iErr)) { return; }
+
+                                double A_x_addition = 0;
+                                double M_11_addition = 0;
+                                double M_22_addition = 0;
+
+                                for (int j = 0; j < NumPoints; j++)
+                                {
+                                    A_x_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamAxialF]);
+                                    M_11_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                    M_22_addition += Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                }
+
+                                //Multiply for sensitivity
+                                b.A_x_def = (A_x_addition / NumPoints);// * (A_x_addition / NumPoints);
+                                b.M_11_def = (M_11_addition / NumPoints);//* (M_11_addition / NumPoints);
+                                b.M_22_def = (M_22_addition / NumPoints);//*(M_22_addition / NumPoints);
+
+                                iErr = St7.St7GetBeamResultArray(1, St7.rtBeamDisp, St7.stBeamGlobal, b.Number,2, c, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
+                                if (CheckiErr(iErr)) { return; }
+                                
+                                double disp = 0;
+                                double dx = 0;
+                                double dy = 0;
+                                double dz = 0;
+                                for (int j = 0; j < NumPoints; j++)
+                                {
+                                    dx += BeamResults[j * NumColumns + 0];
+                                    dy += BeamResults[j * NumColumns + 1];
+                                    dz += BeamResults[j * NumColumns + 2];
+                                    disp += Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                                }
+                                double dx1 = BeamResults[0 * NumColumns + 0] / def_max;
+                                double dy1 = BeamResults[0 * NumColumns + 1] / def_max;
+                                double dz1 = BeamResults[0 * NumColumns + 2] / def_max;
+                                double dx2 = BeamResults[1 * NumColumns + 0] / def_max;
+                                double dy2 = BeamResults[1 * NumColumns + 1] / def_max;
+                                double dz2 = BeamResults[1 * NumColumns + 2] / def_max;
+                                //double dx1 = BeamResults[0 * NumColumns + 0];
+                                //double dy1 = BeamResults[0 * NumColumns + 1];
+                                //double dz1 = BeamResults[0 * NumColumns + 2];
+                                //double dx2 = BeamResults[1 * NumColumns + 0];
+                                //double dy2 = BeamResults[1 * NumColumns + 1];
+                                //double dz2 = BeamResults[1 * NumColumns + 2];
+
+                                //b.d_freq = disp / NumPoints;
+                                b.d_freq = (dx1 * dx1 + dy1 * dy1 + dz1 * dz1 + dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+                                //b.d_freq = disp / NumPoints / def_max;
+                                b.d_freq_x = dx / NumPoints;
+                                b.d_freq_y = dy / NumPoints;
+                                b.d_freq_z = dz / NumPoints;
+                                //}
+                            }
+
+                            iErr = St7.St7CloseResultFile(1);
+                            if (CheckiErr(iErr)) { return; };
+                            if (worker.CancellationPending)
+                            {
+                                iErr = St7.St7CloseFile(1);
+                                if (CheckiErr(iErr)) { return; };
+                                iErr = St7.St7Release();
+                                if (CheckiErr(iErr)) { return; };
+                                e.Cancel = true;
+                                return;
+                            }
+
+                            //delete unit force on worst case node
+                            iErr = St7.St7SetNodeForce3(1, def_node, virtual_case, new double[] { 0, 0, 0 });
+                            if (CheckiErr(iErr)) { return; };
+
+                            //choose sections
+                            stat2 = "choosing sections...";
+                            stat3 = "";
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                            double def_approx = def_max;
+
+                            //foreach(BeamProperty p in beamProperties)
+                            //{ p.TempSectionInt = p.CurrentSectionInt; }
+
+                            int counter = 0;
+                            double lambda = 0.4;
+                            double def_limit_freq = def_max * Math.Pow(freq_current / freq_limit,2);
+                            double def_target = def_limit_freq + lambda * (def_max - def_limit_freq);
+                            while (def_approx > def_target)
+                            {
+                                counter++;
+
+                                double[] group_def_current = new double[nProps2];
+                                double[] group_mass_current = new double[nProps2];
+                                double[] group_modal_mass_current = new double[nProps2];
+                                double[][] group_def_new = new double[nProps2][];
+                                double[][] group_mass_new = new double[nProps2][];
+                                double[][] group_modal_mass_new = new double[nProps2][];
+                                double[][] group_efficiency = new double[nProps2][];
+                                foreach (BeamProperty p in beamProperties)
+                                {
+                                    int ip = p.Number - 1;
+                                    int g = p.Group;
+                                    int num_sections = SecLib.Group(g).Count;
+
+                                    group_def_new[ip] = new double[num_sections];
+                                    group_mass_new[ip] = new double[num_sections];
+                                    group_efficiency[ip] = new double[num_sections];
+                                    group_modal_mass_new[ip] = new double[num_sections];
+                                }
+                                double best_efficiency = 0;
+                                int best_property = 0;
+                                int best_section = 0;
+                                double total_def_approx = 0;
+                                double total_modal_mass_approx = 0;
+                                double total_freq_approx = 0;
+                                double def_factor = 0;
+
+                                //Calc prop group current deflection and mass contributions
+                                foreach (Beam b in beams)
+                                {
+                                    int p = b.PropertyNum - 1;
+                                    int g = beamProperties[p].Group;
+                                    int iCurrent = beamProperties[p].NewSectionInt;
+                                    Section s_current = SecLib.Group(g)[iCurrent];
+
+                                    //Calc deflections and masses per property for current properties
+                                    group_def_current[p] += b.CalcFreq(s_current);
+                                    group_mass_current[p] += b.CalcMass(s_current);
+                                    group_modal_mass_current[p] += b.CalcModalMass(s_current);
+                                    total_def_approx += b.CalcFreq(s_current);
+                                    total_modal_mass_approx += b.CalcModalMass(s_current);
+
+                                    //Calc deflections and masses per property for all potential beams
+                                    foreach (Section s in SecLib.Group(g))
+                                    {
+                                        group_def_new[p][s.Number] += b.CalcFreq(s);
+                                        group_mass_new[p][s.Number] += b.CalcMass(s);
+                                        group_modal_mass_new[p][s.Number] += b.CalcModalMass(s);
+                                    }
+                                }
+
+                                total_freq_approx = Math.Sqrt(total_def_approx / total_modal_mass_approx)/2/Math.PI;
+                                def_factor = def_max / total_def_approx;
+
+                                foreach (BeamProperty p in beamProperties)
+                                {
+                                    if (p.Optimise)
+                                    {
+                                        int g = p.Group;
+                                        int ip = p.Number - 1;
+
+                                        //Calc efficiencies
+                                        foreach (Section s in SecLib.Group(g))
+                                        {
+                                            if (group_mass_new[ip][s.Number] - group_mass_current[ip] != 0) group_efficiency[ip][s.Number] = (1 / group_def_new[ip][s.Number] / group_modal_mass_new[ip][s.Number] - 1 / group_def_current[ip] / group_modal_mass_current[ip]) / (group_mass_new[ip][s.Number] - group_mass_current[ip]);
+                                            else group_efficiency[ip][s.Number] = 0;
+                                            //Choose most efficient
+                                            double def_modmass = ((group_def_current[ip] - group_def_new[ip][s.Number]) / (group_modal_mass_new[ip][s.Number] - group_modal_mass_current[ip]));
+                                            if (group_efficiency[ip][s.Number] > best_efficiency && ((1 / group_def_new[ip][s.Number] / group_modal_mass_new[ip][s.Number] - 1 / group_def_current[ip] / group_modal_mass_current[ip])) > 0)
+                                            {
+                                                best_efficiency = group_efficiency[ip][s.Number];
+                                                best_property = ip;
+                                                best_section = s.Number;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                double def_inc = (group_def_new[best_property][best_section] - group_def_current[best_property]);
+                                if (def_inc > 0) { break; }
+                                def_approx += def_inc * def_factor;
+                                beamProperties[best_property].NewSectionInt = best_section;
+                                beamProperties[best_property].DeflectionGoverned = true;
+
+                                int rem = 0;
+                                Math.DivRem(counter, 50, out rem);
+                                if (rem == 10)
+                                {
+                                    stat3 = String.Format("     freq_approx = {0:0.00}Hz", freq_current * def_max / def_approx);
+                                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                                }
+
+                                if (worker.CancellationPending)
+                                {
+                                    iErr = St7.St7CloseFile(1);
+                                    if (CheckiErr(iErr)) { return; };
+                                    iErr = St7.St7Release();
+                                    if (CheckiErr(iErr)) { return; };
+                                }
+                            }
+
+                            //update sections
+                            UpdateSections(beamProperties, incPrev, inc, ref changes_freq);
+                        }
+
+                        //calc current mass
+                        double new_mass = 0;
+                        double new_modal_mass = 0;
+                        foreach (Beam b in beams)
+                        {
+                            int p = b.PropertyNum - 1;
+                            int g = beamProperties[p].Group;
+                            int iCurrent = beamProperties[p].CurrentSectionInt;
+                            Section s_current = SecLib.Group(g)[iCurrent];
+
+                            new_mass += b.CalcMass(s_current);
+                            new_modal_mass += b.CalcModalMass(s_current);
+                        }
+
+                        stat2 = String.Format("mass (of selection): {0:0.0}T", new_mass);
+                        stat3 = "";
+                        string sMass = stat2;
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                        if (changes_freq > 0) { stat2 = String.Format("freq iteration {0}: {1} section changes", iter_freq, changes_freq) + ", " + sMass; }
+                        else { stat2 = String.Format("freq iteration {0}: sizing for deflection converged", iter_freq) + ", " + sMass; }
+                        stat3 = stat2;
+                        worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+
+                        iErr = St7.St7SaveFileTo(1, optFolder + @"\iter " + iter.ToString() + " - frequency " + iter_freq.ToString() + ".st7");
+                        if (CheckiErr(iErr)) { return; };
+
+                        changes += changes_freq;
+                        if (freq_current > freq_limit) { frequency_satisfied = true; break; }
+                        if (changes_freq == 0)
+                        {
+                            frequency_satisfied = false;
+                            stat2 = "WARNING: Frequencies cannot be further increased, check section catalogue.";
+                            stat3 = stat2;
+                            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
+                            break;
+                        }
+                    }
+                }
+
                 iErr = St7.St7SaveFileTo(1, optFolder + @"\iter " + iter.ToString() + ".st7");
                 if (CheckiErr(iErr)) { return; };
 
@@ -813,6 +1186,7 @@ namespace Strand7_Steel_Section_Sizing
 
             if (!stress_satisfied) { MessageBox.Show("Warning: One or more beams are still overstressed!"); }
             if (!deflections_satisfied) { MessageBox.Show("Warning: Deflection limits are not satisfied!"); }
+            if (!frequency_satisfied) { MessageBox.Show("Warning: Frequency limits are not satisfied!"); }
             else if (changed == 0) { MessageBox.Show("Section sizing has converged!"); }
             else { MessageBox.Show("Section sizing has NOT converged. Maximum number of iterations reached."); }
         }
@@ -828,6 +1202,9 @@ namespace Strand7_Steel_Section_Sizing
             def_limit = (double)args[6];
             optStresses = (bool)args[7];
             stress_limit = (double)args[8];
+            optFrequency = (bool)args[9];
+            freq_limit = (double)args[10];
+            freq_case = (int)args[11];
         }
         private static void CollectSections(string sFolder)
         {
@@ -850,18 +1227,31 @@ namespace Strand7_Steel_Section_Sizing
                         var line = reader.ReadLine();
                         var values = line.Split(',');
 
-                        double d1 = Convert.ToDouble(values[0]);
-                        double d2 = Convert.ToDouble(values[1]);
-                        double d3 = Convert.ToDouble(values[2]);
-                        double t1 = Convert.ToDouble(values[3]);
-                        double t2 = Convert.ToDouble(values[4]);
-                        double t3 = Convert.ToDouble(values[5]);
-                        double a = Convert.ToDouble(values[6]);
-                        double z11 = Convert.ToDouble(values[7]);
-                        double z22 = Convert.ToDouble(values[8]);
+                        //double d1 = Convert.ToDouble(values[0]);
+                        //double d2 = Convert.ToDouble(values[1]);
+                        //double d3 = Convert.ToDouble(values[2]);
+                        //double t1 = Convert.ToDouble(values[3]);
+                        //double t2 = Convert.ToDouble(values[4]);
+                        //double t3 = Convert.ToDouble(values[5]);
+                        //double a = Convert.ToDouble(values[6]);
+                        //double z11 = Convert.ToDouble(values[7]);
+                        //double z22 = Convert.ToDouble(values[8]);
+                        //int stype = Convert.ToInt32(values[9]);
+                        //double i11 = Convert.ToDouble(values[10]);
+                        //double i22 = Convert.ToDouble(values[11]);
+
+                        double d1 = Convert.ToDouble(values[0]) / 1e3;
+                        double d2 = Convert.ToDouble(values[1]) / 1e3;
+                        double d3 = Convert.ToDouble(values[2]) / 1e3;
+                        double t1 = Convert.ToDouble(values[3]) / 1e3;
+                        double t2 = Convert.ToDouble(values[4]) / 1e3;
+                        double t3 = Convert.ToDouble(values[5]) / 1e3;
+                        double a = Convert.ToDouble(values[6]) / 1e6;
+                        double z11 = Convert.ToDouble(values[7]) / 1e9;
+                        double z22 = Convert.ToDouble(values[8]) / 1e9;
                         int stype = Convert.ToInt32(values[9]);
-                        double i11 = Convert.ToDouble(values[10]);
-                        double i22 = Convert.ToDouble(values[11]);
+                        double i11 = Convert.ToDouble(values[10]) / 1e12;
+                        double i22 = Convert.ToDouble(values[11]) / 1e12;
 
                         Section s = new Section(d1,d2,d3,t1,t2,t3,a,z11,z22,stype,i11,i22,g);
                         SecLib.AddSection(s, g);
@@ -897,9 +1287,9 @@ namespace Strand7_Steel_Section_Sizing
                 case Solver.frequency:
                     iErr = St7.St7SetResultFileName(1, sSt7FreqPath);
                     if (CheckiErr(iErr)) { return; };
-                    iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smProgressRun, St7.btTrue);
+                    iErr = St7.St7RunSolver(1, St7.stNaturalFrequencySolver, St7.smBackgroundRun, St7.btTrue);
                     if (CheckiErr(iErr)) { return; };
-                    sSt7ResPath = sSt7NLAPath;
+                    sSt7ResPath = sSt7FreqPath;
                     break;
 
                     //sSt7ResPath = sSt7FreqPath;
@@ -1013,6 +1403,9 @@ namespace Strand7_Steel_Section_Sizing
 
                 throw new Exception(errorstring);
 
+                St7.St7CloseFile(1);
+                St7.St7Release();
+
                 return true;
             }
             return false;
@@ -1039,11 +1432,14 @@ namespace Strand7_Steel_Section_Sizing
         private static List<List<int>> iList = new List<List<int>>();
         private static List<int> ResList_stress = new List<int>();
         private static List<int> ResList_def = new List<int>();
+        private static int freq_case = 0;
         private static Solver sCase = new Solver();
         private static bool optDeflections = new bool();
         private static bool optStresses = new bool();
+        private static bool optFrequency = new bool();
         private static double def_limit = new double();
         private static double stress_limit = new double();
+        private static double freq_limit = new double();
 
         private static string sSt7ResPath = "";
         private static string sSt7LSAPath = "";

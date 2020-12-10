@@ -68,6 +68,10 @@ namespace Strand7_Steel_Section_Sizing
         public double A_x_def { get; set; }
         public double M_11_def { get; set; }
         public double M_22_def { get; set; }
+        public double d_freq { get; set; }
+        public double d_freq_x { get; set; }
+        public double d_freq_y { get; set; }
+        public double d_freq_z { get; set; }
         public double Length { get; set; }
         public Beam(int number)
         {
@@ -79,6 +83,7 @@ namespace Strand7_Steel_Section_Sizing
             A_x_def = 0;
             M_11_def = 0;
             M_22_def = 0;
+            d_freq = 0;
             Length = 0;
         }
         public double CalcDeflection(Section s)
@@ -86,9 +91,20 @@ namespace Strand7_Steel_Section_Sizing
             double Deflection = (A_x_def / s.A + M_11_def / s.I11 + M_22_def / s.I22) * Length / 210000;
             return Deflection;
         }
+        public double CalcFreq(Section s)
+        {
+            double Freq = (A_x_def * A_x_def / s.A + M_11_def * M_11_def / s.I11 + M_22_def * M_22_def / s.I22) * Length / 210000; // / (s.A * d_freq* 0.00000787) ;
+            return Freq;
+        }
+        public double CalcModalMass(Section s)
+        {
+            //double Mass = s.A * Length * (d_freq_x * d_freq_x + d_freq_y * d_freq_y + d_freq_z * d_freq_z) * 0.00000787 / 1000 / 2;
+            double Mass = s.A * Length * d_freq * 7870.0 / 2;
+            return Mass;
+        }
         public double CalcMass(Section s)
         {
-            double Mass = s.A * Length * 0.00000000785;
+            double Mass = s.A * Length * 7870.0 / 1000;// 0.00000785;
             return Mass;
         }
         public double CalcStress(Section s)
@@ -112,6 +128,10 @@ namespace Strand7_Steel_Section_Sizing
             else
             {
                 Stress = A_x_stress / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+            }
+            if (this.Number == 10)
+            {
+                double n = this.Number;
             }
             return Stress;
         }

@@ -25,7 +25,7 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool opt_def {
             get {
                 return ((bool)(this["opt_def"]));
@@ -97,7 +97,7 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool opt_stress {
             get {
                 return ((bool)(this["opt_stress"]));
@@ -116,6 +116,42 @@ namespace Strand7_Steel_Section_Sizing.Properties {
             }
             set {
                 this["stress_lim"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool opt_freq {
+            get {
+                return ((bool)(this["opt_freq"]));
+            }
+            set {
+                this["opt_freq"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public string freq_case {
+            get {
+                return ((string)(this["freq_case"]));
+            }
+            set {
+                this["freq_case"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public string freq_lim {
+            get {
+                return ((string)(this["freq_lim"]));
+            }
+            set {
+                this["freq_lim"] = value;
             }
         }
     }

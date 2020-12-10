@@ -20,6 +20,8 @@ namespace Strand7_Steel_Section_Sizing
         public Form1()
         {
             InitializeComponent();
+            label1.Text = "";
+            label2.Text = "";
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -114,8 +116,10 @@ namespace Strand7_Steel_Section_Sizing
                 List<List<int>> sPropList = new List<List<int>>();
                 List<int> ResList_stress = new List<int>();
                 List<int> ResList_def = new List<int>();
+                int freq_case = 0;
                 double def_limit = 0;
                 double stress_limit = 0;
+                double freq_limit = 0;
 
                 string error = "";
                 bool flag = true;
@@ -148,6 +152,19 @@ namespace Strand7_Steel_Section_Sizing
                     if (!double.TryParse(DefLimitBox.Text, out def_limit) || def_limit <= 0)
                     {
                         MessageBox.Show("input for deflection limit is not valid");
+                        return;
+                    }
+                }
+                if (Freq_checkbox.Checked)
+                {
+                    if (!int.TryParse(FreqLimitBox.Text, out freq_case) || freq_case <= 0)
+                    {
+                        MessageBox.Show("input for frequency case is not valid");
+                        return;
+                    }
+                    if (!double.TryParse(FreqLimitBox.Text, out freq_limit) || freq_limit <= 0)
+                    {
+                        MessageBox.Show("input for frequency limit is not valid");
                         return;
                     }
                 }
@@ -186,6 +203,9 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(def_limit);
                     args.Add(Stress_checkbox.Checked);
                     args.Add(stress_limit);
+                    args.Add(Freq_checkbox.Checked);
+                    args.Add(freq_limit);
+                    args.Add(freq_case);
 
                     try { worker.RunWorkerAsync(args); }
                     catch { }
@@ -296,6 +316,9 @@ namespace Strand7_Steel_Section_Sizing
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_lim = this.StressLimitBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_freq = this.Freq_checkbox.Checked;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_lim = this.FreqLimitBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_case = this.FreqCaseBox.Text;
 
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
         }

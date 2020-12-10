@@ -57,32 +57,43 @@
             this.SecListBox = new System.Windows.Forms.TextBox();
             this.outputBox = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.FrequencyQM = new System.Windows.Forms.PictureBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.FreqCaseBox = new System.Windows.Forms.TextBox();
+            this.Freq_checkbox = new System.Windows.Forms.CheckBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.FreqLimitBox = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DeflectionQM)).BeginInit();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.FrequencyQM)).BeginInit();
+            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 280);
+            this.label1.Location = new System.Drawing.Point(13, 379);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(0, 13);
+            this.label1.Size = new System.Drawing.Size(19, 13);
             this.label1.TabIndex = 0;
+            this.label1.Text = "L1";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(10, 28);
+            this.label2.Location = new System.Drawing.Point(13, 392);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(28, 13);
+            this.label2.Size = new System.Drawing.Size(19, 13);
             this.label2.TabIndex = 1;
-            this.label2.Text = "       ";
+            this.label2.Text = "L2";
             // 
             // worker
             // 
@@ -92,7 +103,7 @@
             // CancelButton
             // 
             this.CancelButton.AutoSize = true;
-            this.CancelButton.Location = new System.Drawing.Point(226, 329);
+            this.CancelButton.Location = new System.Drawing.Point(226, 473);
             this.CancelButton.Margin = new System.Windows.Forms.Padding(2);
             this.CancelButton.Name = "CancelButton";
             this.CancelButton.Size = new System.Drawing.Size(61, 23);
@@ -104,7 +115,7 @@
             // BrowseButton
             // 
             this.BrowseButton.AutoSize = true;
-            this.BrowseButton.Location = new System.Drawing.Point(95, 329);
+            this.BrowseButton.Location = new System.Drawing.Point(95, 473);
             this.BrowseButton.Margin = new System.Windows.Forms.Padding(2);
             this.BrowseButton.Name = "BrowseButton";
             this.BrowseButton.Size = new System.Drawing.Size(127, 23);
@@ -187,7 +198,7 @@
             this.groupBox1.Controls.Add(this.Stress_checkbox);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.StressCaseBox);
-            this.groupBox1.Location = new System.Drawing.Point(11, 107);
+            this.groupBox1.Location = new System.Drawing.Point(11, 116);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(276, 76);
             this.groupBox1.TabIndex = 16;
@@ -252,7 +263,7 @@
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label6);
             this.groupBox2.Controls.Add(this.DefLimitBox);
-            this.groupBox2.Location = new System.Drawing.Point(11, 184);
+            this.groupBox2.Location = new System.Drawing.Point(11, 198);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(276, 86);
             this.groupBox2.TabIndex = 17;
@@ -307,7 +318,7 @@
             this.groupBox3.Controls.Add(this.SecListBox);
             this.groupBox3.Controls.Add(this.label3);
             this.groupBox3.Controls.Add(this.Button_NLA);
-            this.groupBox3.Location = new System.Drawing.Point(11, 8);
+            this.groupBox3.Location = new System.Drawing.Point(11, 12);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(276, 98);
             this.groupBox3.TabIndex = 18;
@@ -336,12 +347,12 @@
             // outputBox
             // 
             this.outputBox.BackColor = System.Drawing.SystemColors.Window;
-            this.outputBox.Location = new System.Drawing.Point(300, 13);
+            this.outputBox.Location = new System.Drawing.Point(300, 12);
             this.outputBox.Multiline = true;
             this.outputBox.Name = "outputBox";
             this.outputBox.ReadOnly = true;
             this.outputBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.outputBox.Size = new System.Drawing.Size(473, 339);
+            this.outputBox.Size = new System.Drawing.Size(473, 483);
             this.outputBox.TabIndex = 12;
             this.outputBox.TabStop = false;
             this.outputBox.WordWrap = false;
@@ -350,17 +361,103 @@
             // 
             this.toolTip1.AutoPopDelay = 15000;
             this.toolTip1.InitialDelay = 500;
-            this.toolTip1.IsBalloon = true;
             this.toolTip1.ReshowDelay = 100;
-            this.toolTip1.ShowAlways = true;
-            this.toolTip1.Popup += new System.Windows.Forms.PopupEventHandler(this.toolTip1_Popup);
+            // 
+            // FrequencyQM
+            // 
+            this.FrequencyQM.Image = ((System.Drawing.Image)(resources.GetObject("FrequencyQM.Image")));
+            this.FrequencyQM.Location = new System.Drawing.Point(255, 19);
+            this.FrequencyQM.Name = "FrequencyQM";
+            this.FrequencyQM.Size = new System.Drawing.Size(12, 12);
+            this.FrequencyQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.FrequencyQM.TabIndex = 22;
+            this.FrequencyQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.FrequencyQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.freq_Tooltip);
+            // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.label8);
+            this.groupBox4.Controls.Add(this.FreqCaseBox);
+            this.groupBox4.Controls.Add(this.FrequencyQM);
+            this.groupBox4.Controls.Add(this.Freq_checkbox);
+            this.groupBox4.Controls.Add(this.label9);
+            this.groupBox4.Controls.Add(this.FreqLimitBox);
+            this.groupBox4.Location = new System.Drawing.Point(11, 290);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(276, 79);
+            this.groupBox4.TabIndex = 24;
+            this.groupBox4.TabStop = false;
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(5, 36);
+            this.label8.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(150, 13);
+            this.label8.TabIndex = 23;
+            this.label8.Text = "Load case containing masses:";
+            this.label8.Visible = false;
+            // 
+            // FreqCaseBox
+            // 
+            this.FreqCaseBox.Enabled = false;
+            this.FreqCaseBox.Location = new System.Drawing.Point(5, 54);
+            this.FreqCaseBox.Margin = new System.Windows.Forms.Padding(2);
+            this.FreqCaseBox.Name = "FreqCaseBox";
+            this.FreqCaseBox.Size = new System.Drawing.Size(264, 20);
+            this.FreqCaseBox.TabIndex = 23;
+            this.FreqCaseBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_case;
+            this.FreqCaseBox.Visible = false;
+            // 
+            // Freq_checkbox
+            // 
+            this.Freq_checkbox.AutoSize = true;
+            this.Freq_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_freq;
+            this.Freq_checkbox.Location = new System.Drawing.Point(6, 17);
+            this.Freq_checkbox.Margin = new System.Windows.Forms.Padding(2);
+            this.Freq_checkbox.Name = "Freq_checkbox";
+            this.Freq_checkbox.Size = new System.Drawing.Size(116, 17);
+            this.Freq_checkbox.TabIndex = 7;
+            this.Freq_checkbox.Text = "Optimise frequency";
+            this.Freq_checkbox.UseVisualStyleBackColor = true;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(193, 18);
+            this.label9.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(20, 13);
+            this.label9.TabIndex = 14;
+            this.label9.Text = "Hz";
+            // 
+            // FreqLimitBox
+            // 
+            this.FreqLimitBox.Location = new System.Drawing.Point(130, 15);
+            this.FreqLimitBox.Margin = new System.Windows.Forms.Padding(2);
+            this.FreqLimitBox.Name = "FreqLimitBox";
+            this.FreqLimitBox.Size = new System.Drawing.Size(59, 20);
+            this.FreqLimitBox.TabIndex = 8;
+            this.FreqLimitBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_lim;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(14, 372);
+            this.label10.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(0, 13);
+            this.label10.TabIndex = 23;
             // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(785, 358);
+            this.ClientSize = new System.Drawing.Size(785, 508);
+            this.Controls.Add(this.groupBox4);
+            this.Controls.Add(this.label10);
             this.Controls.Add(this.outputBox);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -384,6 +481,9 @@
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.FrequencyQM)).EndInit();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -418,6 +518,14 @@
         private System.Windows.Forms.PictureBox StressQM;
         private System.Windows.Forms.PictureBox DeflectionQM;
         private System.Windows.Forms.PictureBox PropertiesQM;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.PictureBox FrequencyQM;
+        private System.Windows.Forms.CheckBox Freq_checkbox;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.TextBox FreqLimitBox;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.TextBox FreqCaseBox;
     }
 }
 
