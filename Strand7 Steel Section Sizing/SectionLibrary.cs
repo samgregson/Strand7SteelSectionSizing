@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Strand7_Steel_Section_Sizing
 {
+    [Serializable]
     class Section
     {
         public double D1 { get; set; }
@@ -23,17 +26,25 @@ namespace Strand7_Steel_Section_Sizing
         public double I11 { get; set; }
         public double I22 { get; set; }
         public double[] sectionDoubles { get; set; }
-        public string sName { get; set; }
+        public string Name { get { return (D2 * 1000).ToString() + " x " + (D1 * 1000).ToString() + " x " + (T1 * 1000).ToString() + " x " + (T2 * 1000).ToString(); } }
         public int group { get; set; }
         public int Number { get; set; }
         public Section(double d1, double d2, double d3, double t1, double t2, double t3, double a, double z11, double z22, int stype, double i11, double i22, int g)
         {
             D1 = d1; D2 = d2; D3 = d3; T1 = t1; T2 = t2; T3 = t3; A = a; Z11 = z11; Z22 = z22; SType = stype; I11 = i11; I22 = i22; group = g;
             sectionDoubles = new double[] { D1, D2, D3, T1, T2, T3 };
-            sName = D1.ToString() + " x " + D2.ToString() + " x " + T1.ToString() + " x " + T2.ToString();
         }
 
     }
+    class SectionCompare : IComparer<Section>
+    {
+        public int Compare(Section x, Section y)
+        {
+            return x.A.CompareTo(y.A);
+        }
+    }
+
+    [Serializable]
     class SectionLibrary
     {
         private List<List<Section>> sections { get; set; }
@@ -44,7 +55,7 @@ namespace Strand7_Steel_Section_Sizing
         }
         public void AddSection(Section s, int group)
         {
-            if(sections.Count <= group)
+            while(sections.Count < group+1)
             { 
                 sections.Add(new List<Section>()); 
             }
@@ -53,11 +64,13 @@ namespace Strand7_Steel_Section_Sizing
             sections[group].Add(s);
             nGroups = sections.Count;
         }
-        public List<Section> Group(int group)
-        {
-            return sections[group];
-        }
+        public List<Section> GetGroup(int group)
+        { return sections[group]; }
+        public Section GetSection(int group, int sectionIndex)
+        { return sections[group][sectionIndex]; }
     }
+
+    [Serializable]
     class Beam
     {
         public int Number { get; set; }
@@ -73,6 +86,8 @@ namespace Strand7_Steel_Section_Sizing
         public double d_freq_y { get; set; }
         public double d_freq_z { get; set; }
         public double Length { get; set; }
+        //public string Name { get; set; }
+        
         public Beam(int number)
         {
             Number = number;
@@ -88,12 +103,12 @@ namespace Strand7_Steel_Section_Sizing
         }
         public double CalcDeflection(Section s)
         {
-            double Deflection = (A_x_def / s.A + M_11_def / s.I11 + M_22_def / s.I22) * Length / 210000;
+            double Deflection = (A_x_def / s.A + M_11_def / s.I11 + M_22_def / s.I22) * Length / (210*1e9);
             return Deflection;
         }
         public double CalcFreq(Section s)
         {
-            double Freq = (A_x_def * A_x_def / s.A + M_11_def * M_11_def / s.I11 + M_22_def * M_22_def / s.I22) * Length / 210000; // / (s.A * d_freq* 0.00000787) ;
+            double Freq = (A_x_def * A_x_def / s.A + M_11_def * M_11_def / s.I11 + M_22_def * M_22_def / s.I22) * Length / (210*1e9); // / (s.A * d_freq* 0.00000787) ;
             return Freq;
         }
         public double CalcModalMass(Section s)
@@ -129,30 +144,60 @@ namespace Strand7_Steel_Section_Sizing
             {
                 Stress = A_x_stress / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
             }
-            if (this.Number == 10)
-            {
-                double n = this.Number;
-            }
             return Stress;
         }
     }
-    class BeamProperty
+
+    [Serializable]
+    class BeamProperty// : ICloneable
     {
         public bool DeflectionGoverned { get; set; }
-        public int CurrentSectionInt { get; set; }
+        private int _currentSectionInt;
+        public int CurrentSectionInt
+        {
+            get { return _currentSectionInt; }
+            set 
+            {
+                _currentSectionInt = value;
+                if (Optimise)
+                { 
+                    CurrentSection = _sectionLibrary.GetSection(Group, _currentSectionInt);
+                    _name = CurrentSection.Name;
+                }
+            }
+        }
+        public Section CurrentSection { get; set; }
         public int NewSectionInt { get; set; }
         public int Number { get; set; }
         public int Group { get; set; }
         public bool Optimise { get; set; }
+        public bool Overstressed { get; set; }
+        private string _name;
+        public string Name { get { return _name; } }
 
-        public BeamProperty(int p)
+        public List<Beam> Beams { get; set; }
+
+        private SectionLibrary _sectionLibrary;
+        
+        public BeamProperty(int p,SectionLibrary sectionLibrary )
         {
             Number = p;
+            Beams = new List<Beam>();
+            _sectionLibrary = sectionLibrary;
         }
-        public BeamProperty(int p,int g)
-        {
-            Number = p;
-            Group = g;
-        }
+        //public object Clone()
+        //{
+        //    using (MemoryStream stream = new MemoryStream())
+        //    {
+        //        if (this.GetType().IsSerializable)
+        //        {
+        //            BinaryFormatter formatter = new BinaryFormatter();
+        //            formatter.Serialize(stream, this);
+        //            stream.Position = 0;
+        //            return formatter.Deserialize(stream);
+        //        }
+        //        return null;
+        //    }
+        //}
     }
 }
