@@ -29,6 +29,8 @@ namespace Strand7_Steel_Section_Sizing
         public string Name { get { return (D2 * 1000).ToString() + " x " + (D1 * 1000).ToString() + " x " + (T1 * 1000).ToString() + " x " + (T2 * 1000).ToString(); } }
         public int group { get; set; }
         public int Number { get; set; }
+        public Section()
+        { }
         public Section(double d1, double d2, double d3, double t1, double t2, double t3, double a, double z11, double z22, int stype, double i11, double i22, int g)
         {
             D1 = d1; D2 = d2; D3 = d3; T1 = t1; T2 = t2; T3 = t3; A = a; Z11 = z11; Z22 = z22; SType = stype; I11 = i11; I22 = i22; group = g;
