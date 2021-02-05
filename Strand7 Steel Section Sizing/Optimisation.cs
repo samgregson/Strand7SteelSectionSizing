@@ -712,7 +712,7 @@ namespace Strand7_Steel_Section_Sizing
                             //{ p.TempSectionInt = p.CurrentSectionInt; }
 
                             int counter = 0;
-                            double lambda = 0.4;
+                            double lambda = 0.3;
                             double def_target = def_limit + lambda * (def_max - def_limit);
                             while (def_approx > def_target && counter < 500)
                             {
@@ -788,7 +788,7 @@ namespace Strand7_Steel_Section_Sizing
 
                                 int rem = 0;
                                 Math.DivRem(counter, 50, out rem);
-                                if (rem == 10)
+                                if (rem == 0)
                                 {
                                     stat3 = String.Format("     def_approx = {0:0.00}mm", def_approx * 1e3);
                                     worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
@@ -1152,7 +1152,7 @@ namespace Strand7_Steel_Section_Sizing
 
                                 int rem = 0;
                                 Math.DivRem(counter, 50, out rem);
-                                if (rem == 10)
+                                if (rem == 0)
                                 {
                                     stat3 = String.Format("     freq_approx = {0:0.00}Hz", freq_current * def_max / def_approx);
                                     worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
@@ -1311,7 +1311,7 @@ namespace Strand7_Steel_Section_Sizing
                 alglib.clusterizersetpoints(state, keys, 2);
                 alglib.clusterizerrunahc(state, out rep);
 
-                MessageBox.Show(alglib.ap.format(rep.z));
+                //MessageBox.Show(alglib.ap.format(rep.z));
 
                 //initial weight
                 List<double> total_weight = new List<double>();
@@ -1325,8 +1325,12 @@ namespace Strand7_Steel_Section_Sizing
                     Section s_big = new Section();
                     Section s0 = new_beamProperties[rep.z[i, 0]].CurrentSection;
                     Section s1 = new_beamProperties[rep.z[i, 1]].CurrentSection;
-                    if (s0.A > s1.A) s_big = new_beamProperties[rep.z[i, 0]].CurrentSection;
-                    else s_big = new_beamProperties[rep.z[i, 1]].CurrentSection;
+
+                    int i_big; int i_small;
+                    if (s0.A > s1.A) { i_big = 0; i_small = 1; }
+                    else { i_big = 1; i_small = 0; }
+
+                    s_big = new_beamProperties[rep.z[i, i_big]].CurrentSection;
 
                     //save new beamproperty and move beams
                     int p_new = new_beamProperties.Count;
@@ -1341,6 +1345,19 @@ namespace Strand7_Steel_Section_Sizing
                     total_weight.Add(0);
                     foreach (BeamProperty prop in new_beamProperties)
                     { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection)/1000; }
+
+                    foreach (Beam b in new_beamProperties[rep.z[i, i_small]].Beams)
+                    {
+                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, new_beamProperties[rep.z[i, i_big]].Number);
+                        if (CheckiErr(iErr)) { return; }
+                        
+                    }
+                    NumDeleted = 0;
+                    iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
+                    if (CheckiErr(iErr)) { return; }
+                    string sSt7ClusterPath = sBaseFile + " - optimised - " + (count - 1 - count_optimise).ToString() + ".st7";
+                    iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
+                    if (CheckiErr(iErr)) { return; }
                 }
                 string s_cluster = Environment.NewLine + "Approximate Rationalisation Results:"
                     + Environment.NewLine + "Properties  Weight [tonne]" + Environment.NewLine;
@@ -1353,7 +1370,7 @@ namespace Strand7_Steel_Section_Sizing
                 stat = "";
                 stat2 = "";
                 stat3 = s_cluster;
-                MessageBox.Show(s_cluster);
+                //MessageBox.Show(s_cluster);
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
             }
 
