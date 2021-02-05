@@ -121,6 +121,9 @@
   <data name="Artboard_1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Artboard 2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="combine_Tooltip" xml:space="preserve">
+    <value>A post processing procedure whereby identical properties are combined. This is especially useful when using the explode procedure.</value>
+  </data>
   <data name="def_Tooltip" xml:space="preserve">
     <value>Provide a load case or a list of load cases to be considered for stress optimisation.
 A dash can be used to indicate a range of cases, e.g. 1-5.
@@ -128,6 +131,9 @@ The load case number is as it appears in the open result file.
 
 A deflection limit should be provided in mm.
 The deflection optimisation considers the absolute displacement of all nodes</value>
+  </data>
+  <data name="explode_Tooltip" xml:space="preserve">
+    <value>Creates a new beam property for each beam element so that beams can be optimised independantly. Choose a Strand7 file to 'explode' a new Strand7 file will be created which can be modified before optimising.</value>
   </data>
   <data name="freq_Tooltip" xml:space="preserve">
     <value>Note that the frequency solver should already be set up prior to running the optimisation.

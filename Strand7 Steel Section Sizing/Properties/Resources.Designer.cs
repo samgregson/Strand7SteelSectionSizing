@@ -71,6 +71,15 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A post processing procedure whereby identical properties are combined. This is especially useful when using the explode procedure..
+        /// </summary>
+        internal static string combine_Tooltip {
+            get {
+                return ResourceManager.GetString("combine_Tooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Provide a load case or a list of load cases to be considered for stress optimisation.
         ///A dash can be used to indicate a range of cases, e.g. 1-5.
         ///The load case number is as it appears in the open result file.
@@ -81,6 +90,15 @@ namespace Strand7_Steel_Section_Sizing.Properties {
         internal static string def_Tooltip {
             get {
                 return ResourceManager.GetString("def_Tooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Creates a new beam property for each beam element so that beams can be optimised independantly. Choose a Strand7 file to &apos;explode&apos; a new Strand7 file will be created which can be modified before optimising..
+        /// </summary>
+        internal static string explode_Tooltip {
+            get {
+                return ResourceManager.GetString("explode_Tooltip", resourceCulture);
             }
         }
         

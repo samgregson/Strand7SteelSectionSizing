@@ -35,7 +35,6 @@
             this.worker = new System.ComponentModel.BackgroundWorker();
             this.CancelButton = new System.Windows.Forms.Button();
             this.BrowseButton = new System.Windows.Forms.Button();
-            this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.Button_LSA = new System.Windows.Forms.RadioButton();
             this.Button_NLA = new System.Windows.Forms.RadioButton();
@@ -54,10 +53,11 @@
             this.DefLimitBox = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.PropertiesQM = new System.Windows.Forms.PictureBox();
-            this.SecListBox = new System.Windows.Forms.TextBox();
             this.outputBox = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.FrequencyQM = new System.Windows.Forms.PictureBox();
+            this.ExplodeQM = new System.Windows.Forms.PictureBox();
+            this.CombineQM = new System.Windows.Forms.PictureBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label8 = new System.Windows.Forms.Label();
             this.FreqCaseBox = new System.Windows.Forms.TextBox();
@@ -65,6 +65,8 @@
             this.label9 = new System.Windows.Forms.Label();
             this.FreqLimitBox = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
+            this.Combine_checkbox = new System.Windows.Forms.CheckBox();
+            this.ExplodeButton = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -72,13 +74,15 @@
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.FrequencyQM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ExplodeQM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CombineQM)).BeginInit();
             this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 379);
+            this.label1.Location = new System.Drawing.Point(13, 412);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(19, 13);
@@ -88,7 +92,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(13, 392);
+            this.label2.Location = new System.Drawing.Point(13, 425);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(19, 13);
@@ -103,7 +107,7 @@
             // CancelButton
             // 
             this.CancelButton.AutoSize = true;
-            this.CancelButton.Location = new System.Drawing.Point(226, 473);
+            this.CancelButton.Location = new System.Drawing.Point(147, 470);
             this.CancelButton.Margin = new System.Windows.Forms.Padding(2);
             this.CancelButton.Name = "CancelButton";
             this.CancelButton.Size = new System.Drawing.Size(61, 23);
@@ -115,7 +119,7 @@
             // BrowseButton
             // 
             this.BrowseButton.AutoSize = true;
-            this.BrowseButton.Location = new System.Drawing.Point(95, 473);
+            this.BrowseButton.Location = new System.Drawing.Point(16, 470);
             this.BrowseButton.Margin = new System.Windows.Forms.Padding(2);
             this.BrowseButton.Name = "BrowseButton";
             this.BrowseButton.Size = new System.Drawing.Size(127, 23);
@@ -123,16 +127,6 @@
             this.BrowseButton.Text = "Select file and optimise";
             this.BrowseButton.UseVisualStyleBackColor = true;
             this.BrowseButton.Click += new System.EventHandler(this.Browse_Click);
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(3, 45);
-            this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(110, 13);
-            this.label3.TabIndex = 5;
-            this.label3.Text = "Properties to optimise:";
             // 
             // label4
             // 
@@ -198,7 +192,7 @@
             this.groupBox1.Controls.Add(this.Stress_checkbox);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.StressCaseBox);
-            this.groupBox1.Location = new System.Drawing.Point(11, 116);
+            this.groupBox1.Location = new System.Drawing.Point(12, 102);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(276, 76);
             this.groupBox1.TabIndex = 16;
@@ -263,7 +257,7 @@
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label6);
             this.groupBox2.Controls.Add(this.DefLimitBox);
-            this.groupBox2.Location = new System.Drawing.Point(11, 198);
+            this.groupBox2.Location = new System.Drawing.Point(12, 184);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(276, 86);
             this.groupBox2.TabIndex = 17;
@@ -315,12 +309,10 @@
             // 
             this.groupBox3.Controls.Add(this.PropertiesQM);
             this.groupBox3.Controls.Add(this.Button_LSA);
-            this.groupBox3.Controls.Add(this.SecListBox);
-            this.groupBox3.Controls.Add(this.label3);
             this.groupBox3.Controls.Add(this.Button_NLA);
-            this.groupBox3.Location = new System.Drawing.Point(11, 12);
+            this.groupBox3.Location = new System.Drawing.Point(11, 45);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(276, 98);
+            this.groupBox3.Size = new System.Drawing.Size(276, 51);
             this.groupBox3.TabIndex = 18;
             this.groupBox3.TabStop = false;
             // 
@@ -334,15 +326,6 @@
             this.PropertiesQM.TabIndex = 20;
             this.PropertiesQM.TabStop = false;
             this.toolTip1.SetToolTip(this.PropertiesQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.prop_Tooltip);
-            // 
-            // SecListBox
-            // 
-            this.SecListBox.Location = new System.Drawing.Point(6, 62);
-            this.SecListBox.Margin = new System.Windows.Forms.Padding(2);
-            this.SecListBox.Name = "SecListBox";
-            this.SecListBox.Size = new System.Drawing.Size(264, 20);
-            this.SecListBox.TabIndex = 3;
-            this.SecListBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list;
             // 
             // outputBox
             // 
@@ -374,6 +357,28 @@
             this.FrequencyQM.TabStop = false;
             this.toolTip1.SetToolTip(this.FrequencyQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.freq_Tooltip);
             // 
+            // ExplodeQM
+            // 
+            this.ExplodeQM.Image = ((System.Drawing.Image)(resources.GetObject("ExplodeQM.Image")));
+            this.ExplodeQM.Location = new System.Drawing.Point(134, 16);
+            this.ExplodeQM.Name = "ExplodeQM";
+            this.ExplodeQM.Size = new System.Drawing.Size(12, 12);
+            this.ExplodeQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.ExplodeQM.TabIndex = 21;
+            this.ExplodeQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.ExplodeQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.explode_Tooltip);
+            // 
+            // CombineQM
+            // 
+            this.CombineQM.Image = ((System.Drawing.Image)(resources.GetObject("CombineQM.Image")));
+            this.CombineQM.Location = new System.Drawing.Point(171, 448);
+            this.CombineQM.Name = "CombineQM";
+            this.CombineQM.Size = new System.Drawing.Size(12, 12);
+            this.CombineQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.CombineQM.TabIndex = 27;
+            this.CombineQM.TabStop = false;
+            this.toolTip1.SetToolTip(this.CombineQM, global::Strand7_Steel_Section_Sizing.Properties.Resources.combine_Tooltip);
+            // 
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.label8);
@@ -382,7 +387,7 @@
             this.groupBox4.Controls.Add(this.Freq_checkbox);
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.FreqLimitBox);
-            this.groupBox4.Location = new System.Drawing.Point(11, 290);
+            this.groupBox4.Location = new System.Drawing.Point(12, 276);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(276, 79);
             this.groupBox4.TabIndex = 24;
@@ -450,12 +455,36 @@
             this.label10.Size = new System.Drawing.Size(0, 13);
             this.label10.TabIndex = 23;
             // 
+            // Combine_checkbox
+            // 
+            this.Combine_checkbox.AutoSize = true;
+            this.Combine_checkbox.Location = new System.Drawing.Point(16, 448);
+            this.Combine_checkbox.Name = "Combine_checkbox";
+            this.Combine_checkbox.Size = new System.Drawing.Size(149, 17);
+            this.Combine_checkbox.TabIndex = 25;
+            this.Combine_checkbox.Text = "Combine properties at end";
+            this.Combine_checkbox.UseVisualStyleBackColor = true;
+            // 
+            // ExplodeButton
+            // 
+            this.ExplodeButton.Location = new System.Drawing.Point(12, 16);
+            this.ExplodeButton.Name = "ExplodeButton";
+            this.ExplodeButton.Size = new System.Drawing.Size(116, 23);
+            this.ExplodeButton.TabIndex = 26;
+            this.ExplodeButton.Text = "Explode Properties";
+            this.ExplodeButton.UseVisualStyleBackColor = true;
+            this.ExplodeButton.Click += new System.EventHandler(this.ExplodeButton_Click);
+            // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(785, 508);
+            this.Controls.Add(this.CombineQM);
+            this.Controls.Add(this.ExplodeQM);
+            this.Controls.Add(this.ExplodeButton);
+            this.Controls.Add(this.Combine_checkbox);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.outputBox);
@@ -482,6 +511,8 @@
             this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.FrequencyQM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ExplodeQM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CombineQM)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.ResumeLayout(false);
@@ -496,8 +527,6 @@
         private System.ComponentModel.BackgroundWorker worker;
         private System.Windows.Forms.Button CancelButton;
         private System.Windows.Forms.Button BrowseButton;
-        private System.Windows.Forms.TextBox SecListBox;
-        private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox StressCaseBox;
         private System.Windows.Forms.RadioButton Button_LSA;
@@ -526,6 +555,10 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox FreqCaseBox;
+        private System.Windows.Forms.CheckBox Combine_checkbox;
+        private System.Windows.Forms.Button ExplodeButton;
+        private System.Windows.Forms.PictureBox ExplodeQM;
+        private System.Windows.Forms.PictureBox CombineQM;
     }
 }
 

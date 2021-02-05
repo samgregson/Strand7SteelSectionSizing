@@ -121,7 +121,7 @@ namespace Strand7_Steel_Section_Sizing
         }
         public double CalcMass(Section s)
         {
-            double Mass = s.A * Length * 7870.0 / 1000;// 0.00000785;
+            double Mass = s.A * Length * 7870.0;// 0.00000785;
             return Mass;
         }
         public double CalcStress(Section s)
@@ -186,6 +186,7 @@ namespace Strand7_Steel_Section_Sizing
             Number = p;
             Beams = new List<Beam>();
             _sectionLibrary = sectionLibrary;
+            CurrentSectionInt = 0;
         }
         //public object Clone()
         //{

@@ -107,9 +107,9 @@ namespace Strand7_Steel_Section_Sizing
         }
         private void Browse_Click(object sender, EventArgs e)
         {
-            if (SecListBox.Text == "")
-            { MessageBox.Show("Please provide list of section numbers to operate on."); }
-            else if (StressCaseBox.Text == "")
+            //if (SecListBox.Text == "")
+            //{ MessageBox.Show("Please provide list of section numbers to operate on."); }
+            if (StressCaseBox.Text == "")
             { MessageBox.Show("Please provide list of result case numbers to operate on."); }
             else
             {
@@ -124,11 +124,11 @@ namespace Strand7_Steel_Section_Sizing
                 string error = "";
                 bool flag = true;
 
-                if (!ConvertStringArray(SecListBox.Text, ref sPropList, ref error))
-                {
-                    MessageBox.Show(error);
-                    return;
-                }
+                //if (!ConvertStringArray(SecListBox.Text, ref sPropList, ref error))
+                //{
+                //    MessageBox.Show(error);
+                //    return;
+                //}
                 if (Stress_checkbox.Checked)
                 {
                     if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
@@ -206,6 +206,7 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(Freq_checkbox.Checked);
                     args.Add(freq_limit);
                     args.Add(freq_case);
+                    args.Add(Combine_checkbox.Checked);
 
                     try { worker.RunWorkerAsync(args); }
                     catch { }
@@ -309,7 +310,7 @@ namespace Strand7_Steel_Section_Sizing
         {
             worker.Dispose();
 
-            Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list = this.SecListBox.Text;
+            //Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list = this.SecListBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases = this.DefCaseBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases = this.StressCaseBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
@@ -341,6 +342,71 @@ namespace Strand7_Steel_Section_Sizing
         private void StressLimitBox_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void ExplodeButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fdlg = new OpenFileDialog();
+            fdlg.Title = "Strand7 file for beam section sizing";
+            fdlg.Filter = "Strand7 files (*.st7)|*.st7";
+            if (fdlg.ShowDialog() == DialogResult.OK)
+            {
+                string sFile = fdlg.FileName;
+                //Strand7 model properties
+                int iErr;
+                iErr = St7.St7Init();
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                int nBeams = new int();
+                iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                int[] NumProperties = new int[St7.kMaxEntityTotals];
+                int[] LastProperty = new int[St7.kMaxEntityTotals];
+                iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                int nProps = NumProperties[St7.ipBeamPropTotal];
+                int nProps2 = LastProperty[St7.ipBeamPropTotal];
+                for (int i = 0; i < nBeams; i++)
+                {
+                    int propNum = 0;
+                    iErr = St7.St7GetElementProperty(1, St7.tyBEAM, i + 1, ref propNum);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+                    int[] Integers = new int[4];
+                    double[] SectionData = new double[St7.kNumBeamSectionData];
+                    double[] BeamMaterial = new double[St7.kNumMaterialData];
+                    iErr = St7.St7GetBeamPropertyData(1, propNum, Integers, SectionData, BeamMaterial);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+
+                    double[] Doubles = new double[9];
+                    iErr = St7.St7GetBeamMaterialData(1, propNum, Doubles);
+
+                    iErr = St7.St7NewBeamProperty(1, nProps2 + i + 1, St7.kBeamTypeBeam, "Beam " + (i+1).ToString());
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+                    iErr = St7.St7SetBeamMaterialData(1, nProps2 + i + 1, Doubles);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+                    iErr = St7.St7SetElementProperty(1, St7.tyBEAM, (i + 1), nProps2 + i + 1);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+                }
+                string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
+                string sExplodedFile = sBaseFile + " - exploded.st7";
+
+                status = "";
+                status2 = "";
+                status3 = "Beam properties 'exploded' and saved to: " + Environment.NewLine + sExplodedFile + Environment.NewLine;
+                updatetext();
+
+                iErr = St7.St7SaveFileTo(1, sExplodedFile);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                iErr = St7.St7CloseFile(1);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                iErr = St7.St7Release();
+                if (Optimisation.CheckiErr(iErr)) { return; }
+            }
+            else
+            {
+                //this.Close();
+            }
         }
     }
 }
