@@ -157,11 +157,12 @@ namespace Strand7_Steel_Section_Sizing
                 }
                 if (Freq_checkbox.Checked)
                 {
-                    if (!int.TryParse(FreqLimitBox.Text, out freq_case) || freq_case <= 0)
-                    {
-                        MessageBox.Show("input for frequency case is not valid");
-                        return;
-                    }
+                    //if (!int.TryParse(FreqCaseBox.Text, out freq_case) || freq_case <= 0)
+                    //{
+                    //    MessageBox.Show("input for frequency case is not valid");
+                    //    return;
+                    //}
+                    freq_case = 1;
                     if (!double.TryParse(FreqLimitBox.Text, out freq_limit) || freq_limit <= 0)
                     {
                         MessageBox.Show("input for frequency limit is not valid");
@@ -407,6 +408,63 @@ namespace Strand7_Steel_Section_Sizing
             {
                 //this.Close();
             }
+        }
+
+        private void ClusterButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fdlg = new OpenFileDialog();
+            fdlg.Title = "Strand7 file for beam section sizing";
+            fdlg.Filter = "Strand7 files (*.st7)|*.st7";
+            if (fdlg.ShowDialog() == DialogResult.OK)
+            {
+                string sFile = fdlg.FileName;
+                //Strand7 model properties
+                int iErr;
+                iErr = St7.St7Init();
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
+                if (Optimisation.CheckiErr(iErr)) { return; }
+
+                int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
+                iErr = St7.St7ConvertUnits(1, units);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+
+                int[] NumProperties = new int[St7.kMaxEntityTotals];
+                int[] LastProperty = new int[St7.kMaxEntityTotals];
+                iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
+                int nProps2 = LastProperty[St7.ipBeamPropTotal]; //EDIT
+                int numGroups = 0;
+                iErr = St7.St7GetNumGroups(1, ref numGroups);
+                int nBeams = new int();
+                iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+
+                Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(sFile), numGroups);
+
+                Beam[] beams = new Beam[nBeams];
+                BeamProperty[] beamProperties = new BeamProperty[nProps2];
+                Optimisation.SetupBeamsAndProperties(false, nBeams, nProps2, beamProperties, beams);
+
+                /// ######################
+                /// ##### Clustering #####
+                /// ######################
+                string s_cluster="";
+                string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
+                Optimisation.ClusterProperties(true, beamProperties, ref s_cluster, sBaseFile);
+                status = "";
+                status2 = "";
+                status3 = s_cluster;
+                updatetext();
+
+                iErr = St7.St7CloseFile(1);
+                if (Optimisation.CheckiErr(iErr)) { return; }
+                iErr = St7.St7Release();
+                if (Optimisation.CheckiErr(iErr)) { return; }
+            }
+
+
         }
     }
 }

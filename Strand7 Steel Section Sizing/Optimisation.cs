@@ -52,8 +52,6 @@ namespace Strand7_Steel_Section_Sizing
             string optFolder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file), "Optimisation results");
             System.IO.Directory.CreateDirectory(optFolder);
             string sOutPath = System.IO.Path.Combine(optFolder, "Section changes.txt");
-            
-
             try { System.IO.File.Delete(sOutPath); }
             catch { }
             sSt7LSAPath = sBaseFile + " - optimised.LSA";
@@ -84,169 +82,24 @@ namespace Strand7_Steel_Section_Sizing
             int numGroups = 0;
             iErr = St7.St7GetNumGroups(1, ref numGroups);
             int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
-            //int[] units = new int[] { St7.luMILLIMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
             iErr = St7.St7ConvertUnits(1, units);
             if (CheckiErr(iErr)) { return; }
             CollectCSVSections(System.IO.Path.GetDirectoryName(file),numGroups);
 
-            #region Set up beams array
-            //####################################
-            //####### Set up beams array #########
-            //####################################
-            beams = new Beam[nBeams];
-            BeamProperty[] beamProperties = new BeamProperty[nProps2];
-            for (int i = 0; i < nBeams; i++)
+            if (nProps2 < 1)
             {
-                beams[i] = new Beam(i + 1);
-                Beam b = beams[i];
-
-                int propNum = 0;
-                iErr = St7.St7GetElementProperty(1, St7.tyBEAM, b.Number, ref propNum);
-                if (CheckiErr(iErr)) { return; };
-
-                double L = 0;
-                iErr = St7.St7GetElementData(1, St7.tyBEAM, b.Number, ref L);
-                if (CheckiErr(iErr)) { return; };
-
-                int group = 0;
-                iErr = St7.St7GetElementGroup(1, St7.tyBEAM, b.Number, ref group);
-                if (CheckiErr(iErr)) { return; };
-
-                b.PropertyNum = propNum;
-                b.Length = L;
-                BeamProperty p = beamProperties[propNum - 1];
-
-                if (p == null)
-                {
-                    p = new BeamProperty(propNum, SecLib);
-                    p.Group = group - 2;
-                }
-                else
-                {
-                    if (p.Group != group - 2)
-                    {
-                        MessageBox.Show("Some beams of a given property have different group numbers");
-                        throw new Exception("Some beams of a given property have different group numbers.");
-                        return;
-                    }
-                }
-                p.Beams.Add(b);
-                if (p.Group > -1) { p.Optimise = true; p.CurrentSectionInt = 0; }
-                beamProperties[propNum - 1] = p;
-            }
-            for (int ip=0;ip<nProps;ip++)
-            {
-                if (beamProperties[ip] == null)
-                { beamProperties[ip] = new BeamProperty(ip+1,SecLib); }
-            }
-            if (!beamProperties.Any(x => x.Optimise))
-            {
-                MessageBox.Show("No beams with positive group IDs are defined");
-                throw new Exception("No beams with positive group IDs are defined.");
-                return;
-            }
-            #endregion
-
-            //List<int> PropExistingList = new List<int>();
-            //for (int ip = 0; ip < nProps; ip++)
-            //{
-            //    int propIndex = ip + 1;
-            //    int PropNum = 0;
-            //    iErr = St7.St7GetPropertyNumByIndex(1, St7.tyBEAM, propIndex, ref PropNum);
-            //    PropExistingList.Add(PropNum);
-            //    if (CheckiErr(iErr)) { return; }
-            //}
-
-            //for (int p = 0; p < nProps2; p++)
-            //{
-            //    beamProperties[p] = new BeamProperty(p + 1, SecLib);
-            //    if (iList[0].Count == 0)
-            //    {
-            //        if (PropExistingList.Contains(p + 1))
-            //        {
-            //            beamProperties[p].Group = 0;
-            //            beamProperties[p].Optimise = true;
-            //            beamProperties[p].CurrentSectionInt = 0;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        for (int g = 0; g < iList.Count; g++)
-            //        {
-            //            //
-            //            if (iList[g].Contains(p + 1) && PropExistingList.Contains(p + 1))
-            //            {
-            //                beamProperties[p].Group = g;
-            //                beamProperties[p].Optimise = true;
-            //                beamProperties[p].CurrentSectionInt = 0;
-            //            }
-            //        }
-            //    }
-            //}
-
-            if (worker.CancellationPending)
-            {
-                iErr = St7.St7CloseFile(1);
-                if (CheckiErr(iErr)) { return; };
-                iErr = St7.St7Release();
-                if (CheckiErr(iErr)) { return; };
-                e.Cancel = true;
+                MessageBox.Show("No beams sections available");
+                throw new Exception("No beams sections available.");
                 return;
             }
 
             double[] inc = new double[nProps2];
             double[] incPrev = new double[nProps2];
             int virtual_case = 0;
-
-            if (nProps2 < 1)
-            {
-                MessageBox.Show("No beams sections available. window");
-                throw new Exception("No beams sections available.");
-                return;
-            }
-
-            if (worker.CancellationPending)
-            {
-                iErr = St7.St7CloseFile(1);
-                if (CheckiErr(iErr)) { return; };
-                iErr = St7.St7Release();
-                if (CheckiErr(iErr)) { return; };
-                e.Cancel = true;
-                return;
-            }
-
-            stat2 = "setting initial sections...";
-            stat3 = "";
-            worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-
-            foreach (BeamProperty prop in beamProperties)
-            {
-                if (prop.Optimise)
-                {
-                    int p = prop.Number;
-                    Section sec = prop.CurrentSection;
-
-                    iErr = St7.St7SetBeamSectionGeometry(1, p, sec.SType, sec.sectionDoubles);
-                    if (CheckiErr(iErr)) { return; };
-
-                    stat2 = "setting property " + p.ToString();
-                    stat3 = "";
-                    worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-
-                    iErr = St7.St7CalculateBeamSectionProperties(1, p, St7.btFalse, St7.btFalse);
-                    if (CheckiErr(iErr)) { return; }
-                }
-                else
-                {
-                    int p = prop.Number;
-                    int sectionType = new int();
-                    double[] doubles = new double[6];
-                    iErr = St7.St7GetBeamSectionGeometry(1, p, ref sectionType, doubles);
-                    if (CheckiErr(iErr)) { return; }
-                    Section sec = new Section(doubles[0], doubles[1], doubles[2], doubles[3], doubles[4], doubles[5], 0, 0, 0, sectionType, 0, 0, 0);
-                    prop.CurrentSection = sec;
-                }
-            }
+            
+            beams = new Beam[nBeams];
+            BeamProperty[] beamProperties = new BeamProperty[nProps2];
+            SetupBeamsAndProperties(true, nBeams, nProps2, beamProperties, beams);
             #endregion
 
             if (worker.CancellationPending)
@@ -712,7 +565,7 @@ namespace Strand7_Steel_Section_Sizing
                             //{ p.TempSectionInt = p.CurrentSectionInt; }
 
                             int counter = 0;
-                            double lambda = 0.3;
+                            double lambda = 0.0;
                             double def_target = def_limit + lambda * (def_max - def_limit);
                             while (def_approx > def_target && counter < 500)
                             {
@@ -1060,7 +913,7 @@ namespace Strand7_Steel_Section_Sizing
                             //{ p.TempSectionInt = p.CurrentSectionInt; }
 
                             int counter = 0;
-                            double lambda = 0.4;
+                            double lambda = 0.5;
                             double def_limit_freq = def_max * Math.Pow(freq_current / freq_limit, 2);
                             double def_target = def_limit_freq + lambda * (def_max - def_limit_freq);
                             while (def_approx > def_target && counter < 500)
@@ -1231,149 +1084,13 @@ namespace Strand7_Steel_Section_Sizing
 
             if (combineProperties)
             {
-                //redefine property numbers:
-                List<BeamProperty> new_beamProperties = ObjectExtension.CloneList<BeamProperty>(beamProperties.ToList());
-
-                foreach (BeamProperty prop in beamProperties)
-                {
-                    BeamProperty propMatch = beamProperties.Where(x => x.Name == prop.Name).First();
-                    if (propMatch.Number != prop.Number)
-                    {
-                        new_beamProperties[propMatch.Number - 1].Beams.AddRange(prop.Beams);
-                        new_beamProperties[prop.Number - 1].Beams.Clear();
-                    }
-                }
-
-                new_beamProperties = new_beamProperties.OrderBy(x => x.CurrentSection.A).ToList();
-                new_beamProperties.Reverse();
-
-                int count = 0;
-                int count_optimise = 0;
-                foreach (BeamProperty prop in new_beamProperties)
-                {
-                    if (prop.Beams.Count > 0)
-                    {
-                        count++;
-                        prop.Number = count;
-                        Section s = prop.CurrentSection;
-                        iErr = St7.St7SetBeamSectionGeometry(1, prop.Number, s.SType, s.sectionDoubles);
-                        if (CheckiErr(iErr)) { return; }
-                        foreach (Beam b in prop.Beams)
-                        {
-                            iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, prop.Number);
-                            if (CheckiErr(iErr)) { return; }
-                        }
-                        iErr = St7.St7CalculateBeamSectionProperties(1, prop.Number, St7.btFalse, St7.btFalse);
-                        if (CheckiErr(iErr)) { return; }
-
-                        if (prop.Optimise)
-                        {
-                            count_optimise++;
-                            iErr = St7.St7SetPropertyName(1, St7.tyBEAM, prop.Number, prop.CurrentSection.Name);
-                            if (CheckiErr(iErr)) { return; }
-                        }
-                    }
-                }
-
-                int NumDeleted = 0;
-                iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
-                if (CheckiErr(iErr)) { return; }
-
-                /// ######################
-                /// ##### Clustering #####
-                /// ######################
-                alglib.clusterizerstate state;
-                alglib.ahcreport rep;
-                //double {h,b,t1,t2}
-                double[,] keys = new double[count_optimise, 4];
-
-                count_optimise = 0;
-                //create keys array and remove irrelavent beam properties
-                for (int p = 0; p < new_beamProperties.Count; p++)
-                {
-                    BeamProperty prop = new_beamProperties[p];
-                    if (prop.Beams.Count > 0)
-                    {
-                        if (prop.Optimise)
-                        {
-                            keys[count_optimise, 0] = prop.CurrentSection.D1;
-                            keys[count_optimise, 1] = prop.CurrentSection.D2;
-                            keys[count_optimise, 2] = prop.CurrentSection.T1;
-                            keys[count_optimise, 3] = prop.CurrentSection.T2;
-                            count_optimise++;
-                        }
-                        else { new_beamProperties.RemoveAt(p); p--; }
-                    }
-                    else { new_beamProperties.RemoveAt(p); p--; }
-                }
-
-                alglib.clusterizercreate(out state);
-                alglib.clusterizersetpoints(state, keys, 2);
-                alglib.clusterizerrunahc(state, out rep);
-
-                //MessageBox.Show(alglib.ap.format(rep.z));
-
-                //initial weight
-                List<double> total_weight = new List<double>();
-                total_weight.Add(0);
-                foreach (BeamProperty prop in new_beamProperties)
-                { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection)/1000; }
-
-                for (int i = 0; i < count_optimise - 1; i++)
-                {
-                    //get biggest section of merge
-                    Section s_big = new Section();
-                    Section s0 = new_beamProperties[rep.z[i, 0]].CurrentSection;
-                    Section s1 = new_beamProperties[rep.z[i, 1]].CurrentSection;
-
-                    int i_big; int i_small;
-                    if (s0.A > s1.A) { i_big = 0; i_small = 1; }
-                    else { i_big = 1; i_small = 0; }
-
-                    s_big = new_beamProperties[rep.z[i, i_big]].CurrentSection;
-
-                    //save new beamproperty and move beams
-                    int p_new = new_beamProperties.Count;
-                    new_beamProperties.Add(new BeamProperty(p_new, SecLib));
-                    new_beamProperties[new_beamProperties.Count - 1].CurrentSection = s_big;
-                    new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 0]].Beams);
-                    new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 1]].Beams);
-                    new_beamProperties[rep.z[i, 0]].Beams.Clear();
-                    new_beamProperties[rep.z[i, 1]].Beams.Clear();
-
-                    //calc weight for this merge
-                    total_weight.Add(0);
-                    foreach (BeamProperty prop in new_beamProperties)
-                    { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection)/1000; }
-
-                    foreach (Beam b in new_beamProperties[rep.z[i, i_small]].Beams)
-                    {
-                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, new_beamProperties[rep.z[i, i_big]].Number);
-                        if (CheckiErr(iErr)) { return; }
-                        
-                    }
-                    NumDeleted = 0;
-                    iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
-                    if (CheckiErr(iErr)) { return; }
-                    string sSt7ClusterPath = sBaseFile + " - optimised - " + (count - 1 - count_optimise).ToString() + ".st7";
-                    iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
-                    if (CheckiErr(iErr)) { return; }
-                }
-                string s_cluster = Environment.NewLine + "Approximate Rationalisation Results:"
-                    + Environment.NewLine + "Properties  Weight [tonne]" + Environment.NewLine;
-                int prop_count = count_optimise;
-                foreach (double w in total_weight)
-                {
-                    s_cluster += prop_count.ToString() + String.Format("        {0:0.0}", w) + Environment.NewLine;
-                    prop_count--;
-                }
+                string s_cluster="";
+                ClusterProperties(true, beamProperties, ref s_cluster,sBaseFile);
                 stat = "";
                 stat2 = "";
                 stat3 = s_cluster;
-                //MessageBox.Show(s_cluster);
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
             }
-
             //Rerun solvers for final solution
             if (optFrequency || optDeflections)
             {
@@ -1438,53 +1155,261 @@ namespace Strand7_Steel_Section_Sizing
             freq_case = (int)args[11];
             combineProperties = (bool)args[12];
         }
-        private static void CollectCSVSections(string sFolder)
+
+        public static void ConsolidateProperties()
         {
-            for (int g = 0; g < iList.Count; g++)
+
+        }
+        public static void ClusterProperties(bool saveStrandFiles, BeamProperty[] beamProperties, ref string s_cluster, string sBaseFile)
+        {
+            int iErr;
+            List<BeamProperty> new_beamProperties = ObjectExtension.CloneList<BeamProperty>(beamProperties.ToList());
+
+            //add all beams to similar beam properties
+            for (int i=0;i<new_beamProperties.Count;i++ )
             {
-                int iErr;
-                string filePath = System.IO.Path.Combine(sFolder,"Section_CSV" + (g+1).ToString() + ".txt");
-                if (!System.IO.File.Exists(filePath))
+                BeamProperty prop = new_beamProperties[i];
+                BeamProperty propMatch = new_beamProperties.Where(x => x.Name == prop.Name).Where(x => x.Group == prop.Group).First();
+                if (propMatch.Number != prop.Number)
                 {
-                    MessageBox.Show("section data file does not exist");
-                    throw new Exception("section data file does not exist.");
-                    return;
-                }
-
-                using (var fs = System.IO.File.OpenRead(filePath))
-                using (var reader = new System.IO.StreamReader(fs))
-                {
-                    while (!reader.EndOfStream)
-                    {
-                        var line = reader.ReadLine();
-                        var values = line.Split(',');
-
-                        double d1 = Convert.ToDouble(values[0]) / 1e3;
-                        double d2 = Convert.ToDouble(values[1]) / 1e3;
-                        double d3 = Convert.ToDouble(values[2]) / 1e3;
-                        double t1 = Convert.ToDouble(values[3]) / 1e3;
-                        double t2 = Convert.ToDouble(values[4]) / 1e3;
-                        double t3 = Convert.ToDouble(values[5]) / 1e3;
-                        double a = Convert.ToDouble(values[6]) / 1e6;
-                        double z11 = Convert.ToDouble(values[7]) / 1e9;
-                        double z22 = Convert.ToDouble(values[8]) / 1e9;
-                        int stype = Convert.ToInt32(values[9]);
-                        double i11 = Convert.ToDouble(values[10]) / 1e12;
-                        double i22 = Convert.ToDouble(values[11]) / 1e12;
-
-                        Section s = new Section(d1,d2,d3,t1,t2,t3,a,z11,z22,stype,i11,i22,g);
-                        SecLib.AddSection(s, g);
-                    }
-                }
-
-                if (SecLib.GetGroup(g).Count == 0)
-                {
-                    MessageBox.Show("No section properties found.");
-                    return;
+                    new_beamProperties[propMatch.Number - 1].Beams.AddRange(prop.Beams);
+                    new_beamProperties[prop.Number - 1].Beams.Clear();
                 }
             }
+
+            //reorder
+            new_beamProperties = new_beamProperties.OrderBy(x => x.CurrentSection.A).ToList();
+            new_beamProperties.Reverse();
+
+            int count = 0;
+            int count_optimise = 0;
+            foreach (BeamProperty prop in new_beamProperties)
+            {
+                if (prop.Beams.Count > 0)
+                {
+                    count++;
+                    prop.Number = count;
+                    Section s = prop.CurrentSection;
+
+                    iErr = St7.St7SetBeamSectionGeometry(1, prop.Number, s.SType, s.sectionDoubles);
+                    if (iErr > 0)
+                    {
+                        iErr = St7.St7NewBeamProperty(1, prop.Number, St7.kBeamTypeBeam, s.Name);
+                        if (CheckiErr(iErr)) { return; }
+                        iErr = St7.St7SetBeamSectionGeometry(1, prop.Number, s.SType, s.sectionDoubles);
+                        if (CheckiErr(iErr)) { return; }
+                    }
+                    foreach (Beam b in prop.Beams)
+                    {
+                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, prop.Number);
+                        if (CheckiErr(iErr)) { return; }
+                    }
+                    iErr = St7.St7CalculateBeamSectionProperties(1, prop.Number, St7.btFalse, St7.btFalse);
+                    if (CheckiErr(iErr)) { return; }
+
+                    if (prop.Optimise)
+                    {
+                        count_optimise++;
+                        iErr = St7.St7SetPropertyName(1, St7.tyBEAM, prop.Number, prop.CurrentSection.Name);
+                        if (CheckiErr(iErr)) { return; }
+                    }
+                }
+            }
+
+            int NumDeleted = 0;
+            iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
+            if (CheckiErr(iErr)) { return; }
+
+            /// ######################
+            /// ##### Clustering #####
+            /// ######################
+            alglib.clusterizerstate state;
+            alglib.ahcreport rep;
+            //double {h,b,t1,t2}
+            double[,] keys = new double[count_optimise, 5];
+
+            count_optimise = 0;
+            //create keys array and remove irrelavent beam properties
+            for (int p = 0; p < new_beamProperties.Count; p++)
+            {
+                BeamProperty prop = new_beamProperties[p];
+                if (prop.Beams.Count > 0)
+                {
+                    if (prop.Optimise)
+                    {
+                        keys[count_optimise, 0] = prop.CurrentSection.D1;
+                        keys[count_optimise, 1] = prop.CurrentSection.D2;
+                        keys[count_optimise, 2] = prop.CurrentSection.T1;
+                        keys[count_optimise, 3] = prop.CurrentSection.T2;
+                        keys[count_optimise, 4] = prop.Group * 1e3;
+                        count_optimise++;
+                    }
+                    else { new_beamProperties.RemoveAt(p); p--; }
+                }
+                else { new_beamProperties.RemoveAt(p); p--; }
+            }
+
+            alglib.clusterizercreate(out state);
+            alglib.clusterizersetpoints(state, keys, count_optimise, 5, 2);
+            alglib.clusterizerrunahc(state, out rep);
+
+            //MessageBox.Show(alglib.ap.format(rep.z));
+
+            //initial weight
+            List<double> total_weight = new List<double>();
+            total_weight.Add(0);
+            foreach (BeamProperty prop in new_beamProperties)
+            { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection) / 1000; }
+
+            NumDeleted = 0;
+            iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
+            if (CheckiErr(iErr)) { return; }
+            string sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise).ToString() + ".st7";
+            iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
+            if (CheckiErr(iErr)) { return; }
+
+            for (int i = 0; i < count_optimise - 1; i++)
+            {
+                //get biggest section of merge
+                Section s_big = new Section();
+                Section s0 = new_beamProperties[rep.z[i, 0]].CurrentSection;
+                Section s1 = new_beamProperties[rep.z[i, 1]].CurrentSection;
+
+                int i_big; int i_small;
+                if (s0.A > s1.A) { i_big = 0; i_small = 1; }
+                else { i_big = 1; i_small = 0; }
+
+                s_big = new_beamProperties[rep.z[i, i_big]].CurrentSection;
+
+                //save new beamproperty and move beams
+                int p_new = new_beamProperties[rep.z[i, i_big]].Number;
+                new_beamProperties.Add(new BeamProperty(p_new, SecLib));
+                new_beamProperties[new_beamProperties.Count - 1].CurrentSection = s_big;
+                new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 0]].Beams);
+                new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 1]].Beams);
+                foreach (Beam b in new_beamProperties[rep.z[i, i_small]].Beams)
+                {
+                    iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, new_beamProperties[rep.z[i, i_big]].Number);
+                    if (CheckiErr(iErr)) { return; }
+                }
+                new_beamProperties[rep.z[i, 0]].Beams.Clear();
+                new_beamProperties[rep.z[i, 1]].Beams.Clear();
+
+                //calc weight for this merge
+                total_weight.Add(0);
+                foreach (BeamProperty prop in new_beamProperties)
+                { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection) / 1000; }
+
+
+                NumDeleted = 0;
+                iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
+                if (CheckiErr(iErr)) { return; }
+                sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise - 1 - i).ToString() + ".st7";
+                iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
+                if (CheckiErr(iErr)) { return; }
+            }
+            s_cluster = Environment.NewLine + "Approximate Rationalisation Results:"
+                + Environment.NewLine + "Properties  Weight [tonne]" + Environment.NewLine;
+            int prop_count = count_optimise;
+            foreach (double w in total_weight)
+            {
+                s_cluster += prop_count.ToString() + String.Format("        {0:0.0}", w) + Environment.NewLine;
+                prop_count--;
+            }            
         }
-        private static void CollectCSVSections(string sFolder, int numGroups)
+        public static void SetupBeamsAndProperties(bool setBeams, int nBeams,int nProps2, BeamProperty[] beamProperties, Beam[] beams)
+        {
+            #region Set up beams array
+            //####################################
+            //####### Set up beams array #########
+            //####################################
+            int iErr;
+
+            //get beam properties (prop number, length, group number)
+            for (int i = 0; i < nBeams; i++)
+            {
+                beams[i] = new Beam(i + 1);
+                Beam b = beams[i];
+
+                int propNum = 0;
+                iErr = St7.St7GetElementProperty(1, St7.tyBEAM, b.Number, ref propNum);
+                if (CheckiErr(iErr)) { return; };
+
+                double L = 0;
+                iErr = St7.St7GetElementData(1, St7.tyBEAM, b.Number, ref L);
+                if (CheckiErr(iErr)) { return; };
+
+                int group = 0;
+                iErr = St7.St7GetElementGroup(1, St7.tyBEAM, b.Number, ref group);
+                if (CheckiErr(iErr)) { return; };
+
+                b.PropertyNum = propNum;
+                b.Length = L;
+                BeamProperty p = beamProperties[propNum - 1];
+
+                if (p == null)
+                {
+                    p = new BeamProperty(propNum, SecLib);
+                    p.Group = group - 2;
+                }
+                else
+                {
+                    if (p.Group != group - 2)
+                    {
+                        MessageBox.Show("Some beams of a given property have different group numbers");
+                        throw new Exception("Some beams of a given property have different group numbers.");
+                        return;
+                    }
+                }
+                p.Beams.Add(b);
+                if (p.Group > -1) { p.Optimise = true; p.CurrentSectionInt = 0; }
+                beamProperties[propNum - 1] = p;
+            }
+
+            for (int ip = 0; ip < nProps2; ip++)
+            {
+                if (beamProperties[ip] == null)
+                { 
+                    beamProperties[ip] = new BeamProperty(ip + 1, SecLib);
+                }
+            }
+            if (!beamProperties.Any(x => x.Optimise))
+            {
+                MessageBox.Show("No beams with positive group IDs are defined");
+                throw new Exception("No beams with positive group IDs are defined.");
+                return;
+            }
+            foreach (BeamProperty prop in beamProperties)
+            {
+                if (prop.Optimise && setBeams)
+                {
+                    int p = prop.Number;
+                    Section sec = prop.CurrentSection;
+
+                    iErr = St7.St7SetBeamSectionGeometry(1, p, sec.SType, sec.sectionDoubles);
+                    if (CheckiErr(iErr)) { return; };
+
+                    iErr = St7.St7CalculateBeamSectionProperties(1, p, St7.btFalse, St7.btFalse);
+                    if (CheckiErr(iErr)) { return; }
+                }
+                else if (prop.Beams.Count > 0)
+                {
+                    int p = prop.Number;
+                    int sectionType = new int();
+                    double[] doubles = new double[6];
+                    iErr = St7.St7GetBeamSectionGeometry(1, p, ref sectionType, doubles);
+                    if (CheckiErr(iErr)) { return; }
+                    double[] doubles2 = new double[11];
+                    int[] integers = new int[1];
+                    iErr = St7.St7GetBeamSectionPropertyData(1,p,integers,doubles2);
+                    if (CheckiErr(iErr)) { return; }
+                    Section sec = new Section(doubles[0], doubles[1], doubles[2], doubles[3], doubles[4], doubles[5], doubles2[0], 0, 0, sectionType, doubles2[1], doubles2[2], 0);
+                    prop.CurrentSection = sec;
+                }
+            }
+            #endregion
+        }
+        public static void CollectCSVSections(string sFolder, int numGroups)
         {
             for (int g = 0; g < numGroups-1; g++)
             {

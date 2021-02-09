@@ -27,13 +27,13 @@ namespace Strand7_Steel_Section_Sizing
         public double I22 { get; set; }
         public double[] sectionDoubles { get; set; }
         public string Name { get { return (D2 * 1000).ToString() + " x " + (D1 * 1000).ToString() + " x " + (T1 * 1000).ToString() + " x " + (T2 * 1000).ToString(); } }
-        public int group { get; set; }
+        public int Group { get; set; }
         public int Number { get; set; }
         public Section()
         { }
-        public Section(double d1, double d2, double d3, double t1, double t2, double t3, double a, double z11, double z22, int stype, double i11, double i22, int g)
+        public Section(double d1, double d2, double d3, double t1, double t2, double t3, double a, double z11, double z22, int stype, double i11, double i22, int group)
         {
-            D1 = d1; D2 = d2; D3 = d3; T1 = t1; T2 = t2; T3 = t3; A = a; Z11 = z11; Z22 = z22; SType = stype; I11 = i11; I22 = i22; group = g;
+            D1 = d1; D2 = d2; D3 = d3; T1 = t1; T2 = t2; T3 = t3; A = a; Z11 = z11; Z22 = z22; SType = stype; I11 = i11; I22 = i22; Group = group;
             sectionDoubles = new double[] { D1, D2, D3, T1, T2, T3 };
         }
 
@@ -105,7 +105,7 @@ namespace Strand7_Steel_Section_Sizing
         }
         public double CalcDeflection(Section s)
         {
-            double Deflection = (A_x_def / s.A + M_11_def / s.I11 + M_22_def / s.I22) * Length / (210*1e9);
+            double Deflection = (A_x_def / s.A + M_11_def / s.I11 + M_22_def / s.I22) * Length / (210*1e9); //A_x_def is the product of results from max case and virtual case
             return Deflection;
         }
         public double CalcFreq(Section s)
@@ -168,7 +168,16 @@ namespace Strand7_Steel_Section_Sizing
                 }
             }
         }
-        public Section CurrentSection { get; set; }
+
+        private Section _currentSection;
+        public Section CurrentSection {
+            get { return _currentSection; }
+            set
+            {
+                _currentSection = value;
+                _name = value.Name;
+            }
+        }
         public int NewSectionInt { get; set; }
         public int Number { get; set; }
         public int Group { get; set; }
@@ -187,6 +196,7 @@ namespace Strand7_Steel_Section_Sizing
             Beams = new List<Beam>();
             _sectionLibrary = sectionLibrary;
             CurrentSectionInt = 0;
+            _currentSection = new Section();
         }
         //public object Clone()
         //{

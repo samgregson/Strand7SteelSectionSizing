@@ -67,6 +67,7 @@
             this.label10 = new System.Windows.Forms.Label();
             this.Combine_checkbox = new System.Windows.Forms.CheckBox();
             this.ExplodeButton = new System.Windows.Forms.Button();
+            this.ClusterButton = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -475,12 +476,23 @@
             this.ExplodeButton.UseVisualStyleBackColor = true;
             this.ExplodeButton.Click += new System.EventHandler(this.ExplodeButton_Click);
             // 
+            // ClusterButton
+            // 
+            this.ClusterButton.Location = new System.Drawing.Point(212, 16);
+            this.ClusterButton.Name = "ClusterButton";
+            this.ClusterButton.Size = new System.Drawing.Size(75, 23);
+            this.ClusterButton.TabIndex = 28;
+            this.ClusterButton.Text = "Cluster";
+            this.ClusterButton.UseVisualStyleBackColor = true;
+            this.ClusterButton.Click += new System.EventHandler(this.ClusterButton_Click);
+            // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(785, 508);
+            this.Controls.Add(this.ClusterButton);
             this.Controls.Add(this.CombineQM);
             this.Controls.Add(this.ExplodeQM);
             this.Controls.Add(this.ExplodeButton);
@@ -559,6 +571,7 @@
         private System.Windows.Forms.Button ExplodeButton;
         private System.Windows.Forms.PictureBox ExplodeQM;
         private System.Windows.Forms.PictureBox CombineQM;
+        private System.Windows.Forms.Button ClusterButton;
     }
 }
 
