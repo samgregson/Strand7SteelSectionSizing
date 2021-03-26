@@ -581,13 +581,16 @@ namespace Strand7_Steel_Section_Sizing
                                 double[][] group_efficiency = new double[nProps2][];
                                 foreach (BeamProperty p in beamProperties)
                                 {
-                                    int ip = p.Number - 1;
-                                    int g = p.Group;
-                                    int num_sections = SecLib.GetGroup(g).Count;
+                                    if (p.Optimise)
+                                    {
+                                        int ip = p.Number - 1;
+                                        int g = p.Group;
+                                        int num_sections = SecLib.GetGroup(g).Count;
 
-                                    group_def_new[ip] = new double[num_sections];
-                                    group_mass_new[ip] = new double[num_sections];
-                                    group_efficiency[ip] = new double[num_sections];
+                                        group_def_new[ip] = new double[num_sections];
+                                        group_mass_new[ip] = new double[num_sections];
+                                        group_efficiency[ip] = new double[num_sections];
+                                    }
                                 }
                                 double best_efficiency = 0;
                                 int best_property = 0;
@@ -672,12 +675,15 @@ namespace Strand7_Steel_Section_Sizing
                         foreach (Beam b in beams)
                         {
                             if (!b.isValid) continue;
-                            int p = b.PropertyNum - 1;
-                            int g = beamProperties[p].Group;
-                            int iCurrent = beamProperties[p].CurrentSectionInt;
-                            Section s_current = SecLib.GetSection(g, iCurrent);
 
-                            new_mass += b.CalcMass(s_current);
+                            int p = b.PropertyNum - 1;
+                            if (beamProperties[p].Optimise)
+                            {
+                                int g = beamProperties[p].Group;
+                                int iCurrent = beamProperties[p].CurrentSectionInt;
+                                Section s_current = SecLib.GetSection(g, iCurrent);
+                                new_mass += b.CalcMass(s_current);
+                            }
                         }
                         new_mass /= 1000;
 
