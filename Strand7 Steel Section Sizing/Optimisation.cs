@@ -594,19 +594,22 @@ namespace Strand7_Steel_Section_Sizing
                                 foreach (Beam b in beams)
                                 {
                                     int p = b.PropertyNum - 1;
-                                    int g = beamProperties[p].Group;
-                                    int iCurrent = beamProperties[p].NewSectionInt;
-                                    Section s_current = SecLib.GetSection(g, iCurrent);
-
-                                    //Calc deflections and masses per property for current properties
-                                    group_def_current[p] += b.CalcDeflection(s_current);
-                                    group_mass_current[p] += b.CalcMass(s_current);
-
-                                    //Calc deflections and masses per property for all potential beams
-                                    foreach (Section sec in SecLib.GetGroup(g))
+                                    if (beamProperties[p].Optimise)
                                     {
-                                        group_def_new[p][sec.Number] += b.CalcDeflection(sec);
-                                        group_mass_new[p][sec.Number] += b.CalcMass(sec);
+                                        int g = beamProperties[p].Group;
+                                        int iCurrent = beamProperties[p].NewSectionInt;
+                                        Section s_current = SecLib.GetSection(g, iCurrent);
+
+                                        //Calc deflections and masses per property for current properties
+                                        group_def_current[p] += b.CalcDeflection(s_current);
+                                        group_mass_current[p] += b.CalcMass(s_current);
+
+                                        //Calc deflections and masses per property for all potential beams
+                                        foreach (Section sec in SecLib.GetGroup(g))
+                                        {
+                                            group_def_new[p][sec.Number] += b.CalcDeflection(sec);
+                                            group_mass_new[p][sec.Number] += b.CalcMass(sec);
+                                        }
                                     }
                                 }
 
