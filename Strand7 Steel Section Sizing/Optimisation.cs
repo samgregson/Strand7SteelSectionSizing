@@ -1082,7 +1082,14 @@ namespace Strand7_Steel_Section_Sizing
 
             //#####################################################################################
 
-            if (combineProperties)
+            //Delete virtual load case
+            if (optFrequency || optDeflections)
+            {
+                iErr = St7.St7DeleteLoadCase(1, virtual_case);
+                if (CheckiErr(iErr)) { return; }
+            } 
+            // clustering
+            if (combineProperties) 
             {
                 string s_cluster="";
                 ClusterProperties(true, beamProperties, ref s_cluster,sBaseFile);
@@ -1090,13 +1097,8 @@ namespace Strand7_Steel_Section_Sizing
                 stat2 = "";
                 stat3 = s_cluster;
                 worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
-            }
+            } 
             //Rerun solvers for final solution
-            if (optFrequency || optDeflections)
-            {
-                iErr = St7.St7DeleteLoadCase(1, virtual_case);
-                if (CheckiErr(iErr)) { return; }
-            }
             if (optStresses || optDeflections)
             {
                 RunSolver(sCase, ref NumPrimary, ref NumSecondary);
@@ -1109,7 +1111,6 @@ namespace Strand7_Steel_Section_Sizing
                 iErr = St7.St7CloseResultFile(1);
                 if (CheckiErr(iErr)) { return; };
             }
-            RunSolver(sCase, ref NumPrimary, ref NumSecondary);
             iErr = St7.St7SaveFileTo(1, optFolder + @"/Optimised.st7");
             if (CheckiErr(iErr)) { return; }
             iErr = St7.St7SaveFileTo(1, sSt7OptimisedPath);
