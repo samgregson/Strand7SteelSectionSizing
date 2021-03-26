@@ -270,6 +270,7 @@ namespace Strand7_Steel_Section_Sizing
 
                             foreach (Beam b in beams)
                             {
+                                if (!b.isValid) continue;
                                 int NumPoints = 0;
                                 int NumColumns = 0;
                                 double[] BeamPos = new double[St7.kMaxBeamResult];
@@ -315,6 +316,7 @@ namespace Strand7_Steel_Section_Sizing
 
                         foreach (Beam b in beams)
                         {
+                            if (!b.isValid) continue;
                             if (beamProperties[b.PropertyNum - 1].Optimise) //&& !beamProperties[b.PropertyNum - 1].Overstressed)
                             {
                                 int p = b.PropertyNum - 1;
@@ -513,6 +515,7 @@ namespace Strand7_Steel_Section_Sizing
 
                             foreach (Beam b in beams)
                             {
+                                if (!b.isValid) continue;
                                 foreach (int c in cases)
                                 {
                                     int NumPoints = 0;
@@ -593,6 +596,7 @@ namespace Strand7_Steel_Section_Sizing
                                 //Calc prop group current deflection and mass contributions
                                 foreach (Beam b in beams)
                                 {
+                                    if (!b.isValid) continue;
                                     int p = b.PropertyNum - 1;
                                     if (beamProperties[p].Optimise)
                                     {
@@ -667,6 +671,7 @@ namespace Strand7_Steel_Section_Sizing
                         double new_mass = 0;
                         foreach (Beam b in beams)
                         {
+                            if (!b.isValid) continue;
                             int p = b.PropertyNum - 1;
                             int g = beamProperties[p].Group;
                             int iCurrent = beamProperties[p].CurrentSectionInt;
@@ -828,6 +833,7 @@ namespace Strand7_Steel_Section_Sizing
 
                             foreach (Beam b in beams)
                             {
+                                if (!b.isValid) continue;
                                 int c = 1;
                                 //foreach (int c in cases)
                                 //{
@@ -952,6 +958,7 @@ namespace Strand7_Steel_Section_Sizing
                                 //Calc prop group current deflection and mass contributions
                                 foreach (Beam b in beams)
                                 {
+                                    if (!b.isValid) continue;
                                     int p = b.PropertyNum - 1;
                                     int g = beamProperties[p].Group;
                                     int iCurrent = beamProperties[p].NewSectionInt;
@@ -1032,6 +1039,7 @@ namespace Strand7_Steel_Section_Sizing
                         double new_modal_mass = 0;
                         foreach (Beam b in beams)
                         {
+                            if (!b.isValid) continue;
                             int p = b.PropertyNum - 1;
                             int g = beamProperties[p].Group;
                             int iCurrent = beamProperties[p].CurrentSectionInt;
@@ -1349,25 +1357,33 @@ namespace Strand7_Steel_Section_Sizing
 
                 b.PropertyNum = propNum;
                 b.Length = L;
-                BeamProperty p = beamProperties[propNum - 1];
 
-                if (p == null)
+                if (propNum > 0)
                 {
-                    p = new BeamProperty(propNum, SecLib);
-                    p.Group = group - 2;
+                    BeamProperty p = beamProperties[propNum - 1];
+
+                    if (p == null)
+                    {
+                        p = new BeamProperty(propNum, SecLib);
+                        p.Group = group - 2;
+                    }
+                    else
+                    {
+                        if (p.Group != group - 2)
+                        {
+                            MessageBox.Show("Some beams of a given property have different group numbers");
+                            throw new Exception("Some beams of a given property have different group numbers.");
+                            return;
+                        }
+                    }
+                    p.Beams.Add(b);
+                    if (p.Group > -1) { p.Optimise = true; p.CurrentSectionInt = 0; }
+                    beamProperties[propNum - 1] = p;
                 }
                 else
                 {
-                    if (p.Group != group - 2)
-                    {
-                        MessageBox.Show("Some beams of a given property have different group numbers");
-                        throw new Exception("Some beams of a given property have different group numbers.");
-                        return;
-                    }
+                    b.isValid = false;
                 }
-                p.Beams.Add(b);
-                if (p.Group > -1) { p.Optimise = true; p.CurrentSectionInt = 0; }
-                beamProperties[propNum - 1] = p;
             }
 
             for (int ip = 0; ip < nProps2; ip++)

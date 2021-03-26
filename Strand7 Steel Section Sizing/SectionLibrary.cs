@@ -89,7 +89,7 @@ namespace Strand7_Steel_Section_Sizing
         public double d_freq_z { get; set; }
         public double Length { get; set; }
         //public string Name { get; set; }
-        
+        public bool isValid { get; set; }
         public Beam(int number)
         {
             Number = number;
@@ -102,6 +102,7 @@ namespace Strand7_Steel_Section_Sizing
             M_22_def = 0;
             d_freq = 0;
             Length = 0;
+            isValid = true;
         }
         public double CalcDeflection(Section s)
         {

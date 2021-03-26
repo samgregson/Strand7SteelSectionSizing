@@ -370,24 +370,32 @@ namespace Strand7_Steel_Section_Sizing
                 int nProps2 = LastProperty[St7.ipBeamPropTotal];
                 for (int i = 0; i < nBeams; i++)
                 {
+                    int groupNum = 0;
+                    iErr = St7.St7GetElementGroup(1, St7.tyBEAM, i + 1, ref groupNum);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+
                     int propNum = 0;
                     iErr = St7.St7GetElementProperty(1, St7.tyBEAM, i + 1, ref propNum);
                     if (Optimisation.CheckiErr(iErr)) { return; }
-                    int[] Integers = new int[4];
-                    double[] SectionData = new double[St7.kNumBeamSectionData];
-                    double[] BeamMaterial = new double[St7.kNumMaterialData];
-                    iErr = St7.St7GetBeamPropertyData(1, propNum, Integers, SectionData, BeamMaterial);
-                    if (Optimisation.CheckiErr(iErr)) { return; }
 
-                    double[] Doubles = new double[9];
-                    iErr = St7.St7GetBeamMaterialData(1, propNum, Doubles);
+                    if (propNum > 0 && groupNum > 1)
+                    {
+                        int[] Integers = new int[4];
+                        double[] SectionData = new double[St7.kNumBeamSectionData];
+                        double[] BeamMaterial = new double[St7.kNumMaterialData];
+                        iErr = St7.St7GetBeamPropertyData(1, propNum, Integers, SectionData, BeamMaterial);
+                        if (Optimisation.CheckiErr(iErr)) { return; }
 
-                    iErr = St7.St7NewBeamProperty(1, nProps2 + i + 1, St7.kBeamTypeBeam, "Beam " + (i+1).ToString());
-                    if (Optimisation.CheckiErr(iErr)) { return; }
-                    iErr = St7.St7SetBeamMaterialData(1, nProps2 + i + 1, Doubles);
-                    if (Optimisation.CheckiErr(iErr)) { return; }
-                    iErr = St7.St7SetElementProperty(1, St7.tyBEAM, (i + 1), nProps2 + i + 1);
-                    if (Optimisation.CheckiErr(iErr)) { return; }
+                        double[] Doubles = new double[9];
+                        iErr = St7.St7GetBeamMaterialData(1, propNum, Doubles);
+
+                        iErr = St7.St7NewBeamProperty(1, nProps2 + i + 1, St7.kBeamTypeBeam, "Beam " + (i + 1).ToString());
+                        if (Optimisation.CheckiErr(iErr)) { return; }
+                        iErr = St7.St7SetBeamMaterialData(1, nProps2 + i + 1, Doubles);
+                        if (Optimisation.CheckiErr(iErr)) { return; }
+                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, (i + 1), nProps2 + i + 1);
+                        if (Optimisation.CheckiErr(iErr)) { return; }
+                    }
                 }
                 string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
                 string sExplodedFile = sBaseFile + " - exploded.st7";
