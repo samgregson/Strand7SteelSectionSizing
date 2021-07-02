@@ -154,5 +154,29 @@ namespace Strand7_Steel_Section_Sizing.Properties {
                 this["freq_lim"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public string rel_node {
+            get {
+                return ((string)(this["rel_node"]));
+            }
+            set {
+                this["rel_node"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool combine {
+            get {
+                return ((bool)(this["combine"]));
+            }
+            set {
+                this["combine"] = value;
+            }
+        }
     }
 }

@@ -77,7 +77,8 @@ namespace Strand7_Steel_Section_Sizing
     {
         public int Number { get; set; }
         public int PropertyNum { get; set; }
-        public double A_x_stress { get; set; }
+        public double A_x_stress_max { get; set; }
+        public double A_x_stress_min { get; set; }
         public double M_11_stress { get; set; }
         public double M_22_stress { get; set; }
         public double A_x_def { get; set; }
@@ -94,7 +95,8 @@ namespace Strand7_Steel_Section_Sizing
         {
             Number = number;
             PropertyNum = 0;
-            A_x_stress = 0;
+            A_x_stress_max = 0;
+            A_x_stress_min = 0;
             M_11_stress = 0;
             M_22_stress = 0;
             A_x_def = 0;
@@ -127,27 +129,32 @@ namespace Strand7_Steel_Section_Sizing
         }
         public double CalcStress(Section s)
         {
-            double Stress;
-            if (A_x_stress < 0)
+            double stress;
+            
+            if (A_x_stress_min < 0)
             {
-                //### Buckling Check ####
-                //double E_s = 210000;
-                //double f_y = 355;
-                //double alpha_c = 0.49;
-                //double lambda = Math.Sqrt(Math.Pow(Length, 2) * s.A / Math.Min(s.I11, s.I22));
-                //double N_cr = Math.Pow(Math.PI, 2) * E_s * s.A / Math.Pow(lambda, 2);
-                //double lambda_nd = Math.Max(0.2, Math.Sqrt(s.A * f_y / N_cr));
-                //double phi_m = 0.5 * (1 + alpha_c * (lambda_nd - 0.2) + Math.Pow(lambda_nd, 2));
-                //double chi_n = 1 / (phi_m + Math.Sqrt(Math.Pow(phi_m, 2) - Math.Pow(lambda_nd, 2)));
+                double stress_min;
+                double stress_max;
 
-                //Stress = Math.Abs(A_x_stress) / s.A / chi_n + M_11_stress / s.Z11 + M_22_stress / s.Z22;
-                Stress = Math.Abs(A_x_stress) / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+                //### Buckling Check ####
+                double E_s = 210000E6; // N/m^2
+                double f_y = 355E6; // N/m^2
+                double alpha_c = 0.21;
+                double lambda = Math.Sqrt(Math.Pow(Length, 2) * s.A / Math.Min(s.I11, s.I22));
+                double N_cr = Math.Pow(Math.PI, 2) * E_s * s.A / Math.Pow(lambda, 2);
+                double lambda_nd = Math.Max(0.2, Math.Sqrt(s.A * f_y / N_cr));
+                double phi_m = 0.5 * (1 + alpha_c * (lambda_nd - 0.2) + Math.Pow(lambda_nd, 2));
+                double chi_n = 1 / (phi_m + Math.Sqrt(Math.Pow(phi_m, 2) - Math.Pow(lambda_nd, 2)));
+
+                stress_min = Math.Abs(A_x_stress_min) / s.A / chi_n + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+                stress_max = Math.Abs(A_x_stress_max) / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;               
+                stress = Math.Max(stress_min, stress_max);
             }
             else
             {
-                Stress = A_x_stress / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
+                stress = A_x_stress_max / s.A + M_11_stress / s.Z11 + M_22_stress / s.Z22;
             }
-            return Stress;
+            return stress;
         }
     }
 

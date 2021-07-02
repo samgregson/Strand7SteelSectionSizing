@@ -129,6 +129,17 @@ namespace Strand7_Steel_Section_Sizing
                 //    MessageBox.Show(error);
                 //    return;
                 //}
+                
+                int relNode = 0;
+                if (relNodeTextBox.Text != "")
+                {
+                    if (!int.TryParse(relNodeTextBox.Text, out relNode))
+                    {
+                        MessageBox.Show("input for relative node is not valid");
+                        return;
+                    }
+                }
+
                 if (Stress_checkbox.Checked)
                 {
                     if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
@@ -208,6 +219,7 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(freq_limit);
                     args.Add(freq_case);
                     args.Add(Combine_checkbox.Checked);
+                    args.Add(relNode);
 
                     try { worker.RunWorkerAsync(args); }
                     catch { }
@@ -321,6 +333,8 @@ namespace Strand7_Steel_Section_Sizing
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_freq = this.Freq_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_lim = this.FreqLimitBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_case = this.FreqCaseBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.rel_node = this.relNodeTextBox.Text;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.combine = this.Combine_checkbox.Checked;
 
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
         }
@@ -460,7 +474,7 @@ namespace Strand7_Steel_Section_Sizing
                 /// ######################
                 string s_cluster="";
                 string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
-                Optimisation.ClusterProperties(true, beamProperties, ref s_cluster, sBaseFile);
+                Optimisation.ClusterProperties(true, true, beamProperties, ref s_cluster, sBaseFile);
                 status = "";
                 status2 = "";
                 status3 = s_cluster;

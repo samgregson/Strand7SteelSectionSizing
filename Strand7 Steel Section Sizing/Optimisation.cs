@@ -100,6 +100,12 @@ namespace Strand7_Steel_Section_Sizing
             beams = new Beam[nBeams];
             BeamProperty[] beamProperties = new BeamProperty[nProps2];
             SetupBeamsAndProperties(true, nBeams, nProps2, beamProperties, beams);
+            //foreach (BeamProperty prop in beamProperties)
+            //{
+            //    prop.CurrentSectionInt = (int)Math.Round((double)SecLib.GetGroup(prop.Group).Count / 4);
+            //    prop.NewSectionInt = prop.CurrentSectionInt;
+            //}
+            //UpdateSections(beamProperties);
             #endregion
 
             if (worker.CancellationPending)
@@ -155,7 +161,7 @@ namespace Strand7_Steel_Section_Sizing
             }
             if (ResList_def.Count == 0)
             {
-                for (int i = 1; i < NumPrimary + NumSecondary; i++) ResList_def.Add(i);
+                for (int i = 1; i <= NumPrimary + NumSecondary; i++) ResList_def.Add(i);
             }
             if (optDeflections || optFrequency)
             {
@@ -225,7 +231,8 @@ namespace Strand7_Steel_Section_Sizing
                     {
                         foreach (Beam b in beams)
                         {
-                            b.A_x_stress = 0;
+                            b.A_x_stress_max = 0;
+                            b.A_x_stress_min = 0;
                             b.M_11_stress = 0;
                             b.M_22_stress = 0;
                         }
@@ -278,20 +285,23 @@ namespace Strand7_Steel_Section_Sizing
                                 iErr = St7.St7GetBeamResultArray(1, St7.rtBeamForce, St7.stBeamLocal, b.Number, 1, ResCase, ref NumPoints, ref NumColumns, BeamPos, BeamResults);
                                 if (CheckiErr(iErr)) { return; }
                                 double A_x_max = 0;
+                                double A_x_min = 0;
                                 double M_11_max = 0;
                                 double M_22_max = 0;
 
                                 for (int j = 0; j < NumPoints; j++)
                                 {
-                                    double A_x_max_j = BeamResults[j * NumColumns + St7.ipBeamAxialF];
-                                    double M_11_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
-                                    double M_22_max_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
-                                    if (Math.Abs(A_x_max_j) > Math.Abs(A_x_max)) { A_x_max = A_x_max_j; }
-                                    if (M_11_max_j > M_11_max) { M_11_max = M_11_max_j; }
-                                    if (M_22_max_j > M_22_max) { M_22_max = M_22_max_j; }
+                                    double A_x_j = BeamResults[j * NumColumns + St7.ipBeamAxialF];
+                                    double M_11_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM2]);
+                                    double M_22_j = Math.Abs(BeamResults[j * NumColumns + St7.ipBeamBM1]);
+                                    if (A_x_j > A_x_max) { A_x_max = A_x_j; }
+                                    if (A_x_j < A_x_min) { A_x_min = A_x_j; }
+                                    if (M_11_j > M_11_max) { M_11_max = M_11_j; }
+                                    if (M_22_j > M_22_max) { M_22_max = M_22_j; }
                                 }
 
-                                if (Math.Abs(A_x_max) > Math.Abs(b.A_x_stress)) { b.A_x_stress = A_x_max; }
+                                if (A_x_max > b.A_x_stress_max) { b.A_x_stress_max = A_x_max; }
+                                if (A_x_min < b.A_x_stress_min) { b.A_x_stress_min = A_x_min; }
                                 if (M_11_max > b.M_11_stress) { b.M_11_stress = M_11_max; }
                                 if (M_22_max > b.M_22_stress) { b.M_22_stress = M_22_max; }
                             }
@@ -436,9 +446,11 @@ namespace Strand7_Steel_Section_Sizing
                         stat3 = "";
                         worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                         double def_max = 0;
+                        double def_relNode = 0;
                         int def_node = 0;
                         int def_max_case = 0;
                         double[] virtual_load = new double[3];
+                        double[] d_rel = new double[3];
 
                         foreach (int ResCase in ResList_def)
                         {
@@ -446,24 +458,39 @@ namespace Strand7_Steel_Section_Sizing
                             stat3 = "";
                             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
 
+                            if (relNode > 0)
+                            {
+                                double[] NodeResults = new double[St7.kMaxDisp];
+                                iErr = St7.St7GetNodeResult(1, St7.rtNodeDisp, relNode, ResCase, NodeResults);
+                                if (CheckiErr(iErr)) { return; };
+                                double dx = 0;// NodeResults[0];
+                                double dy = 0;//NodeResults[1];
+                                double dz = NodeResults[2];
+                                d_rel[0] = dx;
+                                d_rel[1] = dy;
+                                d_rel[2] = dz;
+                                def_relNode = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                            }
+
                             for (int i = 0; i < nNodes; i++)
                             {
                                 double[] NodeResults = new double[St7.kMaxDisp];
                                 iErr = St7.St7GetNodeResult(1, St7.rtNodeDisp, i + 1, ResCase, NodeResults);
                                 if (CheckiErr(iErr)) { return; };
 
-                                double dx = NodeResults[0];
-                                double dy = NodeResults[1];
+                                double dx = 0;//NodeResults[0];
+                                double dy = 0;//NodeResults[1];
                                 double dz = NodeResults[2];
                                 double def = Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                                if (def > def_max)
+
+                                if ((def-def_relNode) > def_max)
                                 {
-                                    def_max = def;
+                                    def_max = def - def_relNode;
                                     def_node = i + 1;
                                     def_max_case = ResCase;
-                                    virtual_load[0] = dx / def;
-                                    virtual_load[1] = dy / def;
-                                    virtual_load[2] = dz / def;
+                                    virtual_load[0] = (dx - d_rel[0]) / (def - def_relNode);
+                                    virtual_load[1] = (dy - d_rel[1]) / (def - def_relNode);
+                                    virtual_load[2] = (dz - d_rel[2]) / (def - def_relNode);
                                 }
                             }
                         }
@@ -564,74 +591,86 @@ namespace Strand7_Steel_Section_Sizing
                             worker.ReportProgress(0, new object[] { stat, stat2, stat3, init });
                             double def_approx = def_max;
 
-                            //foreach(BeamProperty p in beamProperties)
-                            //{ p.TempSectionInt = p.CurrentSectionInt; }
-
-                            int counter = 0;
-                            double lambda = 0.0;
-                            double def_target = def_limit + lambda * (def_max - def_limit);
-                            while (def_approx > def_target && counter < 500)
+                            double[] group_def_current = new double[nProps2];
+                            double[] group_mass_current = new double[nProps2];
+                            double[][] group_def_new = new double[nProps2][];
+                            double[][] group_mass_new = new double[nProps2][];
+                            double[][] group_efficiency = new double[nProps2][];
+                            foreach (BeamProperty p in beamProperties)
                             {
-                                counter++;
-
-                                double[] group_def_current = new double[nProps2];
-                                double[] group_mass_current = new double[nProps2];
-                                double[][] group_def_new = new double[nProps2][];
-                                double[][] group_mass_new = new double[nProps2][];
-                                double[][] group_efficiency = new double[nProps2][];
-                                foreach (BeamProperty p in beamProperties)
+                                if (p.Optimise)
                                 {
-                                    if (p.Optimise)
-                                    {
-                                        int ip = p.Number - 1;
-                                        int g = p.Group;
-                                        int num_sections = SecLib.GetGroup(g).Count;
+                                    int ip = p.Number - 1;
+                                    int g = p.Group;
+                                    int num_sections = SecLib.GetGroup(g).Count;
 
-                                        group_def_new[ip] = new double[num_sections];
-                                        group_mass_new[ip] = new double[num_sections];
-                                        group_efficiency[ip] = new double[num_sections];
+                                    group_def_new[ip] = new double[num_sections];
+                                    group_mass_new[ip] = new double[num_sections];
+                                    group_efficiency[ip] = new double[num_sections];
+                                }
+                            }
+
+                            //Calc prop group current deflection and mass contributions
+                            foreach (Beam b in beams)
+                            {
+                                if (!b.isValid) continue;
+                                int p = b.PropertyNum - 1;
+                                if (beamProperties[p].Optimise)
+                                {
+                                    int g = beamProperties[p].Group;
+                                    int iCurrent = beamProperties[p].NewSectionInt;
+                                    Section s_current = SecLib.GetSection(g, iCurrent);
+
+                                    //Calc deflections and masses per property for current properties
+                                    group_def_current[p] += b.CalcDeflection(s_current);
+                                    group_mass_current[p] += b.CalcMass(s_current);
+
+                                    //Calc deflections and masses per property for all potential beams
+                                    foreach (Section sec in SecLib.GetGroup(g))
+                                    {
+                                        group_def_new[p][sec.Number] += b.CalcDeflection(sec);
+                                        group_mass_new[p][sec.Number] += b.CalcMass(sec);
                                     }
                                 }
+                            }
+                            foreach (BeamProperty p in beamProperties)
+                            {
+                                if (p.Optimise)
+                                {
+                                    int g = p.Group;
+                                    int ip = p.Number - 1;
+
+                                    //Calc efficiencies
+                                    foreach (Section sec in SecLib.GetGroup(g))
+                                    {
+                                        if (group_mass_new[ip][sec.Number] - group_mass_current[ip] != 0) group_efficiency[ip][sec.Number] = (group_def_current[ip] - group_def_new[ip][sec.Number]) / (group_mass_new[ip][sec.Number] - group_mass_current[ip]);
+                                        else group_efficiency[ip][sec.Number] = 0;
+                                    }
+                                }
+                            }
+
+                            int counter = 0;
+                            // The higher the number the more changes made per iteration. l=1 tries to hit exactly.
+                            double lambda = 1.0;
+                            //if (def_max / def_limit > 1.5) lambda = 1.5;
+                            // Reduce approximated target by 1mm to avoid many runs of solving the model.
+                            double def_target = def_max + lambda * (def_limit - def_max) - 0.001;
+
+                            while (def_approx > def_target && counter < 5000)
+                            {
+                                counter++;
                                 double best_efficiency = 0;
                                 int best_property = 0;
                                 int best_section = 0;
 
-                                //Calc prop group current deflection and mass contributions
-                                foreach (Beam b in beams)
-                                {
-                                    if (!b.isValid) continue;
-                                    int p = b.PropertyNum - 1;
-                                    if (beamProperties[p].Optimise)
-                                    {
-                                        int g = beamProperties[p].Group;
-                                        int iCurrent = beamProperties[p].NewSectionInt;
-                                        Section s_current = SecLib.GetSection(g, iCurrent);
-
-                                        //Calc deflections and masses per property for current properties
-                                        group_def_current[p] += b.CalcDeflection(s_current);
-                                        group_mass_current[p] += b.CalcMass(s_current);
-
-                                        //Calc deflections and masses per property for all potential beams
-                                        foreach (Section sec in SecLib.GetGroup(g))
-                                        {
-                                            group_def_new[p][sec.Number] += b.CalcDeflection(sec);
-                                            group_mass_new[p][sec.Number] += b.CalcMass(sec);
-                                        }
-                                    }
-                                }
-
                                 foreach (BeamProperty p in beamProperties)
                                 {
                                     if (p.Optimise)
                                     {
                                         int g = p.Group;
                                         int ip = p.Number - 1;
-
-                                        //Calc efficiencies
                                         foreach (Section sec in SecLib.GetGroup(g))
                                         {
-                                            if (group_mass_new[ip][sec.Number] - group_mass_current[ip] != 0) group_efficiency[ip][sec.Number] = (group_def_current[ip] - group_def_new[ip][sec.Number]) / (group_mass_new[ip][sec.Number] - group_mass_current[ip]);
-                                            else group_efficiency[ip][sec.Number] = 0;
                                             //Choose most efficient
                                             if (group_efficiency[ip][sec.Number] > best_efficiency && (group_def_new[ip][sec.Number] - group_def_current[ip]) < 0)
                                             {
@@ -643,11 +682,25 @@ namespace Strand7_Steel_Section_Sizing
                                     }
                                 }
 
+
                                 double def_inc = (group_def_new[best_property][best_section] - group_def_current[best_property]);
-                                if (def_inc == 0) { break; }
+                                if (def_inc >= 0) { break; }
                                 def_approx += def_inc;
                                 beamProperties[best_property].NewSectionInt = best_section;
                                 beamProperties[best_property].DeflectionGoverned = true;
+
+                                // Update deflections and masses per property for current properties
+                                group_def_current[best_property] = group_def_new[best_property][best_section];
+                                group_mass_current[best_property] = group_mass_new[best_property][best_section];
+                                int best_group = beamProperties[best_property].Group;
+                                int best_p = beamProperties[best_property].Number - 1;
+
+                                // Update efficiencies
+                                foreach (Section sec in SecLib.GetGroup(best_group))
+                                {
+                                    if (group_mass_new[best_p][sec.Number] - group_mass_current[best_p] != 0) group_efficiency[best_p][sec.Number] = (group_def_current[best_p] - group_def_new[best_p][sec.Number]) / (group_mass_new[best_p][sec.Number] - group_mass_current[best_p]);
+                                    else group_efficiency[best_p][sec.Number] = 0;
+                                }
 
                                 int rem = 0;
                                 Math.DivRem(counter, 50, out rem);
@@ -928,9 +981,9 @@ namespace Strand7_Steel_Section_Sizing
                             //{ p.TempSectionInt = p.CurrentSectionInt; }
 
                             int counter = 0;
-                            double lambda = 0.5;
+                            double lambda = 0.5; //the higher the number the more changes made per iteration. l=1 tries to hit exactly.
                             double def_limit_freq = def_max * Math.Pow(freq_current / freq_limit, 2);
-                            double def_target = def_limit_freq + lambda * (def_max - def_limit_freq);
+                            double def_target = def_max + lambda * (def_limit_freq - def_max);
                             while (def_approx > def_target && counter < 500)
                             {
                                 counter++;
@@ -1014,7 +1067,7 @@ namespace Strand7_Steel_Section_Sizing
                                 }
 
                                 double def_inc = (group_def_new[best_property][best_section] - group_def_current[best_property]);
-                                if (def_inc == 0) { break; }
+                                if (def_inc >= 0) { break; }
                                 def_approx += def_inc * def_factor;
                                 beamProperties[best_property].NewSectionInt = best_section;
                                 beamProperties[best_property].DeflectionGoverned = true;
@@ -1109,7 +1162,7 @@ namespace Strand7_Steel_Section_Sizing
             if (combineProperties) 
             {
                 string s_cluster="";
-                ClusterProperties(true, beamProperties, ref s_cluster,sBaseFile);
+                ClusterProperties(true,false, beamProperties, ref s_cluster,sBaseFile);
                 stat = "";
                 stat2 = "";
                 stat3 = s_cluster;
@@ -1172,13 +1225,13 @@ namespace Strand7_Steel_Section_Sizing
             freq_limit = (double)args[10];
             freq_case = (int)args[11];
             combineProperties = (bool)args[12];
+            relNode = (int)args[13];
         }
-
         public static void ConsolidateProperties()
         {
 
         }
-        public static void ClusterProperties(bool saveStrandFiles, BeamProperty[] beamProperties, ref string s_cluster, string sBaseFile)
+        public static void ClusterProperties(bool saveStrandFiles, bool cluster, BeamProperty[] beamProperties, ref string s_cluster, string sBaseFile)
         {
             int iErr;
             List<BeamProperty> new_beamProperties = ObjectExtension.CloneList<BeamProperty>(beamProperties.ToList());
@@ -1241,99 +1294,102 @@ namespace Strand7_Steel_Section_Sizing
             /// ######################
             /// ##### Clustering #####
             /// ######################
-            alglib.clusterizerstate state;
-            alglib.ahcreport rep;
-            //double {h,b,t1,t2}
-            double[,] keys = new double[count_optimise, 5];
-
-            count_optimise = 0;
-            //create keys array and remove irrelavent beam properties
-            for (int p = 0; p < new_beamProperties.Count; p++)
+            if (cluster)
             {
-                BeamProperty prop = new_beamProperties[p];
-                if (prop.Beams.Count > 0)
+                alglib.clusterizerstate state;
+                alglib.ahcreport rep;
+                //double {h,b,t1,t2}
+                double[,] keys = new double[count_optimise, 5];
+
+                count_optimise = 0;
+                //create keys array and remove irrelavent beam properties
+                for (int p = 0; p < new_beamProperties.Count; p++)
                 {
-                    if (prop.Optimise)
+                    BeamProperty prop = new_beamProperties[p];
+                    if (prop.Beams.Count > 0)
                     {
-                        keys[count_optimise, 0] = prop.CurrentSection.D1;
-                        keys[count_optimise, 1] = prop.CurrentSection.D2;
-                        keys[count_optimise, 2] = prop.CurrentSection.T1;
-                        keys[count_optimise, 3] = prop.CurrentSection.T2;
-                        keys[count_optimise, 4] = prop.Group * 1e3;
-                        count_optimise++;
+                        if (prop.Optimise)
+                        {
+                            keys[count_optimise, 0] = prop.CurrentSection.D1;
+                            keys[count_optimise, 1] = prop.CurrentSection.D2;
+                            keys[count_optimise, 2] = prop.CurrentSection.T1;
+                            keys[count_optimise, 3] = prop.CurrentSection.T2;
+                            keys[count_optimise, 4] = prop.Group * 1e3;
+                            count_optimise++;
+                        }
+                        else { new_beamProperties.RemoveAt(p); p--; }
                     }
                     else { new_beamProperties.RemoveAt(p); p--; }
                 }
-                else { new_beamProperties.RemoveAt(p); p--; }
-            }
 
-            alglib.clusterizercreate(out state);
-            alglib.clusterizersetpoints(state, keys, count_optimise, 5, 2);
-            alglib.clusterizerrunahc(state, out rep);
+                alglib.clusterizercreate(out state);
+                alglib.clusterizersetpoints(state, keys, count_optimise, 5, 2);
+                alglib.clusterizerrunahc(state, out rep);
 
-            //MessageBox.Show(alglib.ap.format(rep.z));
+                //MessageBox.Show(alglib.ap.format(rep.z));
 
-            //initial weight
-            List<double> total_weight = new List<double>();
-            total_weight.Add(0);
-            foreach (BeamProperty prop in new_beamProperties)
-            { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection) / 1000; }
-
-            NumDeleted = 0;
-            iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
-            if (CheckiErr(iErr)) { return; }
-            string sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise).ToString() + ".st7";
-            iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
-            if (CheckiErr(iErr)) { return; }
-
-            for (int i = 0; i < count_optimise - 1; i++)
-            {
-                //get biggest section of merge
-                Section s_big = new Section();
-                Section s0 = new_beamProperties[rep.z[i, 0]].CurrentSection;
-                Section s1 = new_beamProperties[rep.z[i, 1]].CurrentSection;
-
-                int i_big; int i_small;
-                if (s0.A > s1.A) { i_big = 0; i_small = 1; }
-                else { i_big = 1; i_small = 0; }
-
-                s_big = new_beamProperties[rep.z[i, i_big]].CurrentSection;
-
-                //save new beamproperty and move beams
-                int p_new = new_beamProperties[rep.z[i, i_big]].Number;
-                new_beamProperties.Add(new BeamProperty(p_new, SecLib));
-                new_beamProperties[new_beamProperties.Count - 1].CurrentSection = s_big;
-                new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 0]].Beams);
-                new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 1]].Beams);
-                foreach (Beam b in new_beamProperties[rep.z[i, i_small]].Beams)
-                {
-                    iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, new_beamProperties[rep.z[i, i_big]].Number);
-                    if (CheckiErr(iErr)) { return; }
-                }
-                new_beamProperties[rep.z[i, 0]].Beams.Clear();
-                new_beamProperties[rep.z[i, 1]].Beams.Clear();
-
-                //calc weight for this merge
+                //initial weight
+                List<double> total_weight = new List<double>();
                 total_weight.Add(0);
                 foreach (BeamProperty prop in new_beamProperties)
                 { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection) / 1000; }
 
-
                 NumDeleted = 0;
                 iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
                 if (CheckiErr(iErr)) { return; }
-                sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise - 1 - i).ToString() + ".st7";
+                string sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise).ToString() + ".st7";
                 iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
                 if (CheckiErr(iErr)) { return; }
+
+                for (int i = 0; i < count_optimise - 1; i++)
+                {
+                    //get biggest section of merge
+                    Section s_big = new Section();
+                    Section s0 = new_beamProperties[rep.z[i, 0]].CurrentSection;
+                    Section s1 = new_beamProperties[rep.z[i, 1]].CurrentSection;
+
+                    int i_big; int i_small;
+                    if (s0.A > s1.A) { i_big = 0; i_small = 1; }
+                    else { i_big = 1; i_small = 0; }
+
+                    s_big = new_beamProperties[rep.z[i, i_big]].CurrentSection;
+
+                    //save new beamproperty and move beams
+                    int p_new = new_beamProperties[rep.z[i, i_big]].Number;
+                    new_beamProperties.Add(new BeamProperty(p_new, SecLib));
+                    new_beamProperties[new_beamProperties.Count - 1].CurrentSection = s_big;
+                    new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 0]].Beams);
+                    new_beamProperties[new_beamProperties.Count - 1].Beams.AddRange(new_beamProperties[rep.z[i, 1]].Beams);
+                    foreach (Beam b in new_beamProperties[rep.z[i, i_small]].Beams)
+                    {
+                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, b.Number, new_beamProperties[rep.z[i, i_big]].Number);
+                        if (CheckiErr(iErr)) { return; }
+                    }
+                    new_beamProperties[rep.z[i, 0]].Beams.Clear();
+                    new_beamProperties[rep.z[i, 1]].Beams.Clear();
+
+                    //calc weight for this merge
+                    total_weight.Add(0);
+                    foreach (BeamProperty prop in new_beamProperties)
+                    { foreach (Beam b in prop.Beams) total_weight[total_weight.Count - 1] += b.CalcMass(prop.CurrentSection) / 1000; }
+
+
+                    NumDeleted = 0;
+                    iErr = St7.St7DeleteUnusedProperties(1, St7.tyBEAM, ref NumDeleted);
+                    if (CheckiErr(iErr)) { return; }
+                    sSt7ClusterPath = sBaseFile + " - clustered - " + (count_optimise - 1 - i).ToString() + ".st7";
+                    iErr = St7.St7SaveFileTo(1, sSt7ClusterPath);
+                    if (CheckiErr(iErr)) { return; }
+                }
+                s_cluster = Environment.NewLine + "Approximate Rationalisation Results:"
+                    + Environment.NewLine + "Properties  Weight [tonne]" + Environment.NewLine;
+                int prop_count = count_optimise;
+                foreach (double w in total_weight)
+                {
+                    s_cluster += prop_count.ToString() + String.Format("        {0:0.0}", w) + Environment.NewLine;
+                    prop_count--;
+                }
             }
-            s_cluster = Environment.NewLine + "Approximate Rationalisation Results:"
-                + Environment.NewLine + "Properties  Weight [tonne]" + Environment.NewLine;
-            int prop_count = count_optimise;
-            foreach (double w in total_weight)
-            {
-                s_cluster += prop_count.ToString() + String.Format("        {0:0.0}", w) + Environment.NewLine;
-                prop_count--;
-            }            
         }
         public static void SetupBeamsAndProperties(bool setBeams, int nBeams,int nProps2, BeamProperty[] beamProperties, Beam[] beams)
         {
@@ -1568,6 +1624,29 @@ namespace Strand7_Steel_Section_Sizing
 
             }
         }
+        private static void UpdateSections(BeamProperty[] beamProperties)
+        {
+            int iErr = 0;
+            foreach (BeamProperty p in beamProperties)
+            {
+                if (p.Optimise)
+                {
+                    int ip = p.Number - 1;
+                    int g = p.Group;
+                    int s = p.CurrentSectionInt;
+                    int stype = SecLib.GetSection(g, s).SType;
+                    double[] SectionDoubles = SecLib.GetSection(g, s).sectionDoubles;
+
+                    iErr = St7.St7SetBeamSectionGeometry(1, p.Number, stype, SectionDoubles);
+                    if (CheckiErr(iErr)) { return; };
+                    iErr = St7.St7CalculateBeamSectionProperties(1, p.Number, St7.btFalse, St7.btFalse);
+                    if (CheckiErr(iErr)) { return; };
+
+                    sb.Append(p.CurrentSectionInt.ToString() + ",");
+                }
+
+            }
+        }
         public static double Stress(double A_x,double M_11, double M_22, double A, double I11, double I22, double L, double Z11, double Z22)
         {
             double Stress = 0;
@@ -1624,6 +1703,7 @@ namespace Strand7_Steel_Section_Sizing
 
                 return true;
             }
+
             return false;
         }
 
@@ -1657,6 +1737,7 @@ namespace Strand7_Steel_Section_Sizing
         private static double def_limit = new double();
         private static double stress_limit = new double();
         private static double freq_limit = new double();
+        private static int relNode = 0;
 
         private static string sSt7ResPath = "";
         private static string sSt7LSAPath = "";

@@ -35,5 +35,11 @@
     <Setting Name="freq_lim" Type="System.String" Scope="User">
       <Value Profile="(Default)">2</Value>
     </Setting>
+    <Setting Name="rel_node" Type="System.String" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="combine" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -68,6 +68,8 @@
             this.Combine_checkbox = new System.Windows.Forms.CheckBox();
             this.ExplodeButton = new System.Windows.Forms.Button();
             this.ClusterButton = new System.Windows.Forms.Button();
+            this.relNodeTextBox = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -232,7 +234,6 @@
             // Stress_checkbox
             // 
             this.Stress_checkbox.AutoSize = true;
-            this.Stress_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress;
             this.Stress_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Stress_checkbox.Location = new System.Drawing.Point(6, 12);
             this.Stress_checkbox.Name = "Stress_checkbox";
@@ -240,6 +241,7 @@
             this.Stress_checkbox.TabIndex = 4;
             this.Stress_checkbox.Text = "Optimise stress";
             this.Stress_checkbox.UseVisualStyleBackColor = true;
+            this.Stress_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress;
             // 
             // StressCaseBox
             // 
@@ -252,6 +254,8 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.label3);
+            this.groupBox2.Controls.Add(this.relNodeTextBox);
             this.groupBox2.Controls.Add(this.DeflectionQM);
             this.groupBox2.Controls.Add(this.Def_checkbox);
             this.groupBox2.Controls.Add(this.DefCaseBox);
@@ -260,7 +264,7 @@
             this.groupBox2.Controls.Add(this.DefLimitBox);
             this.groupBox2.Location = new System.Drawing.Point(12, 184);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(276, 86);
+            this.groupBox2.Size = new System.Drawing.Size(276, 116);
             this.groupBox2.TabIndex = 17;
             this.groupBox2.TabStop = false;
             // 
@@ -388,7 +392,7 @@
             this.groupBox4.Controls.Add(this.Freq_checkbox);
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.FreqLimitBox);
-            this.groupBox4.Location = new System.Drawing.Point(12, 276);
+            this.groupBox4.Location = new System.Drawing.Point(12, 306);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(276, 79);
             this.groupBox4.TabIndex = 24;
@@ -465,6 +469,8 @@
             this.Combine_checkbox.TabIndex = 25;
             this.Combine_checkbox.Text = "Combine properties at end";
             this.Combine_checkbox.UseVisualStyleBackColor = true;
+            this.Combine_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.combine;
+
             // 
             // ExplodeButton
             // 
@@ -485,6 +491,24 @@
             this.ClusterButton.Text = "Cluster";
             this.ClusterButton.UseVisualStyleBackColor = true;
             this.ClusterButton.Click += new System.EventHandler(this.ClusterButton_Click);
+            // 
+            // relNodeTextBox
+            // 
+            this.relNodeTextBox.Location = new System.Drawing.Point(84, 80);
+            this.relNodeTextBox.Name = "relNodeTextBox";
+            this.relNodeTextBox.Size = new System.Drawing.Size(47, 20);
+            this.relNodeTextBox.TabIndex = 23;
+            this.relNodeTextBox.Text = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.rel_node;
+
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(7, 83);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(71, 13);
+            this.label3.TabIndex = 24;
+            this.label3.Text = "relative node:";
             // 
             // Form1
             // 
@@ -572,6 +596,8 @@
         private System.Windows.Forms.PictureBox ExplodeQM;
         private System.Windows.Forms.PictureBox CombineQM;
         private System.Windows.Forms.Button ClusterButton;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox relNodeTextBox;
     }
 }
 
