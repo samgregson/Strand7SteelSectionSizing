@@ -26,7 +26,14 @@ namespace Strand7_Steel_Section_Sizing
         public double I11 { get; set; }
         public double I22 { get; set; }
         public double[] sectionDoubles { get; set; }
-        public string Name { get { return (D2 * 1000).ToString() + " x " + (D1 * 1000).ToString() + " x " + (T1 * 1000).ToString() + " x " + (T2 * 1000).ToString(); } }
+        public string Name
+        {
+            get
+            {
+                if (SType == 2) return String.Format("CHS{0:0}x{1:0.0}", D1 * 1000, T1 * 1000);
+                else return (D2 * 1000).ToString() + " x " + (D1 * 1000).ToString() + " x " + (T1 * 1000).ToString() + " x " + (T2 * 1000).ToString();
+            } 
+        }
         public int Group { get; set; }
         public int Number { get; set; }
         public Section()
@@ -183,6 +190,7 @@ namespace Strand7_Steel_Section_Sizing
             set
             {
                 _currentSection = value;
+                //_currentSectionInt = value.Number;
                 _name = value.Name;
             }
         }

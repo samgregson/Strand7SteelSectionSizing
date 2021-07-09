@@ -178,5 +178,17 @@ namespace Strand7_Steel_Section_Sizing.Properties {
                 this["combine"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string deflection_limits {
+            get {
+                return ((string)(this["deflection_limits"]));
+            }
+            set {
+                this["deflection_limits"] = value;
+            }
+        }
     }
 }

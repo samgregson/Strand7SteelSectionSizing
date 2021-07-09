@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,6 +18,7 @@ namespace Strand7_Steel_Section_Sizing
         string status2;
         string status3;
         Timer timer1;
+        private BindingList<DeflectionLimit> deflectionLimits;
         public Form1()
         {
             InitializeComponent();
@@ -25,12 +27,25 @@ namespace Strand7_Steel_Section_Sizing
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            deflectionLimits = LoadDeflectionLimits();
+            this.deflectionGrid.DataSource = deflectionLimits;
             initialising = true;
             this.worker.DoWork += worker_DoWork;
             this.worker.ProgressChanged += worker_ProgressChanged;
             this.worker.RunWorkerCompleted += worker_RunWorkerCompleted;
             timer1 = new Timer();
             timer1.Enabled = false;
+        }
+        private BindingList<DeflectionLimit> LoadDeflectionLimits()
+        {
+            string deflectionSettings = Properties.Settings.Default.deflection_limits;
+            var list = JsonConvert.DeserializeObject<BindingList<DeflectionLimit>>(deflectionSettings);
+
+            if (list == null || list.Count == 0)
+            {
+                list = new BindingList<DeflectionLimit>() { new DeflectionLimit()};
+            }
+            return list;
         }
         private void worker_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
@@ -79,7 +94,7 @@ namespace Strand7_Steel_Section_Sizing
             label2.Refresh();
             if (status3 != "")
             {
-                outputBox.Text += status3 + Environment.NewLine;
+                outputBox.AppendText(status3 + Environment.NewLine);
                 outputBox.Refresh();
             }
         }
@@ -124,22 +139,6 @@ namespace Strand7_Steel_Section_Sizing
                 string error = "";
                 bool flag = true;
 
-                //if (!ConvertStringArray(SecListBox.Text, ref sPropList, ref error))
-                //{
-                //    MessageBox.Show(error);
-                //    return;
-                //}
-                
-                int relNode = 0;
-                if (relNodeTextBox.Text != "")
-                {
-                    if (!int.TryParse(relNodeTextBox.Text, out relNode))
-                    {
-                        MessageBox.Show("input for relative node is not valid");
-                        return;
-                    }
-                }
-
                 if (Stress_checkbox.Checked)
                 {
                     if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
@@ -155,15 +154,23 @@ namespace Strand7_Steel_Section_Sizing
                 }
                 if (Def_checkbox.Checked)
                 {
-                    if (!ConvertString(DefCaseBox.Text, ref ResList_def, ref error))
+                    foreach (var d in deflectionLimits)
                     {
-                        MessageBox.Show(error);
-                        return;
-                    }
-                    if (!double.TryParse(DefLimitBox.Text, out def_limit) || def_limit <= 0)
-                    {
-                        MessageBox.Show("input for deflection limit is not valid");
-                        return;
+                        if (!ConvertString(d, ref error))
+                        {
+                            MessageBox.Show(error);
+                            return;
+                        }
+                        if (d.Deflection <= 0)
+                        {
+                            MessageBox.Show("input for deflection limit is not valid");
+                            return;
+                        }
+                        //if (d.X == false && d.Y == false && d.Z == false)
+                        //{
+                        //    MessageBox.Show("choose at least one direction for deflection limit");
+                        //    return;
+                        //}
                     }
                 }
                 if (Freq_checkbox.Checked)
@@ -219,7 +226,8 @@ namespace Strand7_Steel_Section_Sizing
                     args.Add(freq_limit);
                     args.Add(freq_case);
                     args.Add(Combine_checkbox.Checked);
-                    args.Add(relNode);
+                    args.Add(useExisting.Checked);
+                    args.Add(deflectionLimits.ToList());
 
                     try { worker.RunWorkerAsync(args); }
                     catch { }
@@ -294,6 +302,34 @@ namespace Strand7_Steel_Section_Sizing
             iList = sList;
             return flag;
         }
+        bool ConvertString(DeflectionLimit d, ref string error)
+        {
+            bool flag = true;
+            string error1 = "";
+            string error2 = "";
+            
+            // Check Load Cases input
+            List<int> casesList = new List<int>();
+            if (d.LoadCasesInput != null && ConvertString(d.LoadCasesInput, ref casesList, ref error1))
+            {
+                if (d.LoadCasesOutput == null) d.LoadCasesOutput = new List<int>();
+                d.LoadCasesOutput = casesList;
+            }
+            else
+            { error = error1; return false; }
+
+            // Check Nodes input
+            List<int> nodesList = new List<int>();
+            if (d.LoadCasesInput != null && ConvertString(d.DeflectionNodesInput, ref nodesList, ref error1))
+            {
+                if (d.DeflectionNodesOutput == null) d.DeflectionNodesOutput = new List<int>();
+                d.DeflectionNodesOutput = nodesList;
+            }
+            else
+            { error = error2; return false; }
+
+            return flag;
+        }
         bool ConvertStringArray(string s_in, ref List<List<int>> iList, ref string error)
         {
             List<List<int>> sList = new List<List<int>>();
@@ -322,43 +358,18 @@ namespace Strand7_Steel_Section_Sizing
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             worker.Dispose();
-
-            //Strand7_Steel_Section_Sizing.Properties.Settings.Default.sections_list = this.SecListBox.Text;
-            Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_cases = this.DefCaseBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_cases = this.StressCaseBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_stress = this.Stress_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_def = this.Def_checkbox.Checked;
-            Strand7_Steel_Section_Sizing.Properties.Settings.Default.def_lim = this.DefLimitBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.stress_lim = this.StressLimitBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.opt_freq = this.Freq_checkbox.Checked;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_lim = this.FreqLimitBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.freq_case = this.FreqCaseBox.Text;
-            Strand7_Steel_Section_Sizing.Properties.Settings.Default.rel_node = this.relNodeTextBox.Text;
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.combine = this.Combine_checkbox.Checked;
+            Strand7_Steel_Section_Sizing.Properties.Settings.Default.deflection_limits = JsonConvert.SerializeObject(this.deflectionLimits);
 
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
         }
-
-        private void label7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void toolTip1_Popup(object sender, PopupEventArgs e)
-        {
-
-        }
-
-        private void Button_NLA_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void StressLimitBox_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
         private void ExplodeButton_Click(object sender, EventArgs e)
         {
             OpenFileDialog fdlg = new OpenFileDialog();
@@ -431,7 +442,6 @@ namespace Strand7_Steel_Section_Sizing
                 //this.Close();
             }
         }
-
         private void ClusterButton_Click(object sender, EventArgs e)
         {
             OpenFileDialog fdlg = new OpenFileDialog();
@@ -466,15 +476,15 @@ namespace Strand7_Steel_Section_Sizing
                 Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(sFile), numGroups);
 
                 Beam[] beams = new Beam[nBeams];
-                BeamProperty[] beamProperties = new BeamProperty[nProps2];
-                Optimisation.SetupBeamsAndProperties(false, nBeams, nProps2, beamProperties, beams);
+                Optimisation.beamProperties = new BeamProperty[nProps2];
+                Optimisation.SetupBeamsAndProperties(false, nBeams, beams);
 
                 /// ######################
                 /// ##### Clustering #####
                 /// ######################
                 string s_cluster="";
                 string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
-                Optimisation.ClusterProperties(true, true, beamProperties, ref s_cluster, sBaseFile);
+                Optimisation.ClusterProperties(true, true, ref s_cluster, sBaseFile);
                 status = "";
                 status2 = "";
                 status3 = s_cluster;
@@ -485,8 +495,6 @@ namespace Strand7_Steel_Section_Sizing
                 iErr = St7.St7Release();
                 if (Optimisation.CheckiErr(iErr)) { return; }
             }
-
-
         }
     }
 }
