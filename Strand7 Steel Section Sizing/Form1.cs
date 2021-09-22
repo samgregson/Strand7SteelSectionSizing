@@ -24,6 +24,10 @@ namespace Strand7_Steel_Section_Sizing
             InitializeComponent();
             label1.Text = "";
             label2.Text = "";
+
+            int iErr;
+            iErr = St7.St7Init();
+            if (Optimisation.CheckiErr(iErr)) { return; }
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -120,123 +124,107 @@ namespace Strand7_Steel_Section_Sizing
             updatetext();
             //Environment.Exit(0);
         }
-        private void Browse_Click(object sender, EventArgs e)
+        private void Optimise_Click(object sender, EventArgs e)
         {
-            //if (SecListBox.Text == "")
-            //{ MessageBox.Show("Please provide list of section numbers to operate on."); }
-            if (StressCaseBox.Text == "")
-            { MessageBox.Show("Please provide list of result case numbers to operate on."); }
-            else
+            List<List<int>> sPropList = new List<List<int>>();
+            List<int> ResList_stress = new List<int>();
+            List<int> ResList_def = new List<int>();
+            int freq_case = 0;
+            double def_limit = 0;
+            double stress_limit = 0;
+            double freq_limit = 0;
+
+            string error = "";
+            bool flag = true;
+            
+            string sFile = fileBox.Text;
+
+            if (fileBox.Text == "")
             {
-                List<List<int>> sPropList = new List<List<int>>();
-                List<int> ResList_stress = new List<int>();
-                List<int> ResList_def = new List<int>();
-                int freq_case = 0;
-                double def_limit = 0;
-                double stress_limit = 0;
-                double freq_limit = 0;
+                MessageBox.Show(@"Please provide Strand7 file to operate on using the ""Browse"" button.");
+                return;
+            }
 
-                string error = "";
-                bool flag = true;
+            if (StressCaseBox.Text == "")
+            {
+                MessageBox.Show("Please provide list of result case numbers to operate on.");
+                return;
+            }
 
-                if (Stress_checkbox.Checked)
+            if (Stress_checkbox.Checked)
+            {
+                if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
                 {
-                    if (!ConvertString(StressCaseBox.Text, ref ResList_stress, ref error))
+                    MessageBox.Show(error);
+                    return;
+                }
+                if (!double.TryParse(StressLimitBox.Text, out stress_limit) || stress_limit <= 0)
+                {
+                    MessageBox.Show("input for stress limit is not valid");
+                    return;
+                }
+            }
+            if (Def_checkbox.Checked)
+            {
+                foreach (var d in deflectionLimits)
+                {
+                    if (!ConvertString(d, ref error))
                     {
                         MessageBox.Show(error);
                         return;
                     }
-                    if (!double.TryParse(StressLimitBox.Text, out stress_limit) || stress_limit <= 0)
+                    if (d.Deflection <= 0)
                     {
-                        MessageBox.Show("input for stress limit is not valid");
+                        MessageBox.Show("input for deflection limit is not valid");
                         return;
                     }
-                }
-                if (Def_checkbox.Checked)
-                {
-                    foreach (var d in deflectionLimits)
-                    {
-                        if (!ConvertString(d, ref error))
-                        {
-                            MessageBox.Show(error);
-                            return;
-                        }
-                        if (d.Deflection <= 0)
-                        {
-                            MessageBox.Show("input for deflection limit is not valid");
-                            return;
-                        }
-                        //if (d.X == false && d.Y == false && d.Z == false)
-                        //{
-                        //    MessageBox.Show("choose at least one direction for deflection limit");
-                        //    return;
-                        //}
-                    }
-                }
-                if (Freq_checkbox.Checked)
-                {
-                    //if (!int.TryParse(FreqCaseBox.Text, out freq_case) || freq_case <= 0)
-                    //{
-                    //    MessageBox.Show("input for frequency case is not valid");
-                    //    return;
-                    //}
-                    freq_case = 1;
-                    if (!double.TryParse(FreqLimitBox.Text, out freq_limit) || freq_limit <= 0)
-                    {
-                        MessageBox.Show("input for frequency limit is not valid");
-                        return;
-                    }
-                }
-
-                //message
-                string SResList = "";
-                string SPropList = "";
-                if (ResList_stress.Count > 0) { SResList = string.Join(",", ResList_stress.Select(x => x.ToString()).ToArray()); }
-                else { SResList = "All"; }
-                if (sPropList.Count > 0) { SPropList = string.Join(",", sPropList.Select(x => x.ToString()).ToArray()); }
-                else { SPropList = "All"; }
-                //string message = "Result case list: " + SResList + Environment.NewLine + "Properties list: " + SPropList;
-                //MessageBox.Show(message);
-
-                OpenFileDialog fdlg = new OpenFileDialog();
-                fdlg.Title = "Strand7 file for beam section sizing";
-                fdlg.Filter = "Strand7 files (*.st7)|*.st7";
-                if (fdlg.ShowDialog() == DialogResult.OK)
-                {
-                    List<object> args = new List<object>();
-
-                    string sFile = fdlg.FileName;
-
-                    //Dictionary<string, object> input = new Dictionary<string, object>();
-                    //input.Add("sFile", sFile);
-                    //input.Add("sPropList", sPropList);
-                    //input.Add("ResList_stress", ResList_stress);
-
-                    args.Add(sFile);
-                    args.Add(sPropList);
-                    args.Add(ResList_stress);
-                    if (Button_LSA.Checked && !Button_NLA.Checked) { args.Add(Optimisation.Solver.linear); }
-                    else if (!Button_LSA.Checked && Button_NLA.Checked) { args.Add(Optimisation.Solver.nonlin); }
-                    args.Add(Def_checkbox.Checked);
-                    args.Add(ResList_def);
-                    args.Add(def_limit);
-                    args.Add(Stress_checkbox.Checked);
-                    args.Add(stress_limit);
-                    args.Add(Freq_checkbox.Checked);
-                    args.Add(freq_limit);
-                    args.Add(freq_case);
-                    args.Add(Combine_checkbox.Checked);
-                    args.Add(useExisting.Checked);
-                    args.Add(deflectionLimits.ToList());
-
-                    try { worker.RunWorkerAsync(args); }
-                    catch { }
-                }
-                else
-                {
-                    //this.Close();
                 }
             }
+            if (Freq_checkbox.Checked)
+            {
+                //if (!int.TryParse(FreqCaseBox.Text, out freq_case) || freq_case <= 0)
+                //{
+                //    MessageBox.Show("input for frequency case is not valid");
+                //    return;
+                //}
+                freq_case = 1;
+                if (!double.TryParse(FreqLimitBox.Text, out freq_limit) || freq_limit <= 0)
+                {
+                    MessageBox.Show("input for frequency limit is not valid");
+                    return;
+                }
+            }
+
+            //message
+            string SResList = "";
+            string SPropList = "";
+            if (ResList_stress.Count > 0) { SResList = string.Join(",", ResList_stress.Select(x => x.ToString()).ToArray()); }
+            else { SResList = "All"; }
+            if (sPropList.Count > 0) { SPropList = string.Join(",", sPropList.Select(x => x.ToString()).ToArray()); }
+            else { SPropList = "All"; }
+
+            List<object> args = new List<object>();
+
+            args.Add(sFile);
+            args.Add(sPropList);
+            args.Add(ResList_stress);
+            if (Button_LSA.Checked && !Button_NLA.Checked) { args.Add(Optimisation.Solver.linear); }
+            else if (!Button_LSA.Checked && Button_NLA.Checked) { args.Add(Optimisation.Solver.nonlin); }
+            args.Add(Def_checkbox.Checked);
+            args.Add(ResList_def);
+            args.Add(def_limit);
+            args.Add(Stress_checkbox.Checked);
+            args.Add(stress_limit);
+            args.Add(Freq_checkbox.Checked);
+            args.Add(freq_limit);
+            args.Add(freq_case);
+            args.Add(Combine_checkbox.Checked);
+            args.Add(useExisting.Checked);
+            args.Add(deflectionLimits.ToList());
+
+            try { worker.RunWorkerAsync(args); }
+            catch { }
+            
         }
         private void Cancel_Click(object sender, EventArgs e)
         {
@@ -369,131 +357,167 @@ namespace Strand7_Steel_Section_Sizing
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.deflection_limits = JsonConvert.SerializeObject(this.deflectionLimits);
 
             Strand7_Steel_Section_Sizing.Properties.Settings.Default.Save();
+
+            int iErr;
+            iErr = St7.St7Release();
+            if (Optimisation.CheckiErr(iErr)) { return; }
         }
         private void ExplodeButton_Click(object sender, EventArgs e)
         {
-            OpenFileDialog fdlg = new OpenFileDialog();
-            fdlg.Title = "Strand7 file for beam section sizing";
-            fdlg.Filter = "Strand7 files (*.st7)|*.st7";
-            if (fdlg.ShowDialog() == DialogResult.OK)
+
+            string sFile = fileBox.Text;
+
+            if (fileBox.Text == "")
             {
-                string sFile = fdlg.FileName;
-                //Strand7 model properties
-                int iErr;
-                iErr = St7.St7Init();
+                MessageBox.Show(@"Please provide Strand7 file to operate on using the ""Browse"" button.");
+                return;
+            }
+
+            //Strand7 model properties
+            int iErr;
+            //iErr = St7.St7Init();
+            //if (Optimisation.CheckiErr(iErr)) { return; }
+            iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            int nBeams = new int();
+            iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            int[] NumProperties = new int[St7.kMaxEntityTotals];
+            int[] LastProperty = new int[St7.kMaxEntityTotals];
+            iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            int nProps = NumProperties[St7.ipBeamPropTotal];
+            int nProps2 = LastProperty[St7.ipBeamPropTotal];
+            for (int i = 0; i < nBeams; i++)
+            {
+                int groupNum = 0;
+                iErr = St7.St7GetElementGroup(1, St7.tyBEAM, i + 1, ref groupNum);
                 if (Optimisation.CheckiErr(iErr)) { return; }
-                iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
+
+                int propNum = 0;
+                iErr = St7.St7GetElementProperty(1, St7.tyBEAM, i + 1, ref propNum);
                 if (Optimisation.CheckiErr(iErr)) { return; }
-                int nBeams = new int();
-                iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                int[] NumProperties = new int[St7.kMaxEntityTotals];
-                int[] LastProperty = new int[St7.kMaxEntityTotals];
-                iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                int nProps = NumProperties[St7.ipBeamPropTotal];
-                int nProps2 = LastProperty[St7.ipBeamPropTotal];
-                for (int i = 0; i < nBeams; i++)
+
+                if (propNum > 0 && groupNum > 1)
                 {
-                    int groupNum = 0;
-                    iErr = St7.St7GetElementGroup(1, St7.tyBEAM, i + 1, ref groupNum);
+                    int[] Integers = new int[4];
+                    double[] SectionData = new double[St7.kNumBeamSectionData];
+                    double[] BeamMaterial = new double[St7.kNumMaterialData];
+                    iErr = St7.St7GetBeamPropertyData(1, propNum, Integers, SectionData, BeamMaterial);
                     if (Optimisation.CheckiErr(iErr)) { return; }
 
-                    int propNum = 0;
-                    iErr = St7.St7GetElementProperty(1, St7.tyBEAM, i + 1, ref propNum);
+                    double[] Doubles = new double[9];
+                    iErr = St7.St7GetBeamMaterialData(1, propNum, Doubles);
+
+                    iErr = St7.St7NewBeamProperty(1, nProps2 + i + 1, St7.kBeamTypeBeam, "Beam " + (i + 1).ToString());
                     if (Optimisation.CheckiErr(iErr)) { return; }
-
-                    if (propNum > 0 && groupNum > 1)
-                    {
-                        int[] Integers = new int[4];
-                        double[] SectionData = new double[St7.kNumBeamSectionData];
-                        double[] BeamMaterial = new double[St7.kNumMaterialData];
-                        iErr = St7.St7GetBeamPropertyData(1, propNum, Integers, SectionData, BeamMaterial);
-                        if (Optimisation.CheckiErr(iErr)) { return; }
-
-                        double[] Doubles = new double[9];
-                        iErr = St7.St7GetBeamMaterialData(1, propNum, Doubles);
-
-                        iErr = St7.St7NewBeamProperty(1, nProps2 + i + 1, St7.kBeamTypeBeam, "Beam " + (i + 1).ToString());
-                        if (Optimisation.CheckiErr(iErr)) { return; }
-                        iErr = St7.St7SetBeamMaterialData(1, nProps2 + i + 1, Doubles);
-                        if (Optimisation.CheckiErr(iErr)) { return; }
-                        iErr = St7.St7SetElementProperty(1, St7.tyBEAM, (i + 1), nProps2 + i + 1);
-                        if (Optimisation.CheckiErr(iErr)) { return; }
-                    }
+                    iErr = St7.St7SetBeamMaterialData(1, nProps2 + i + 1, Doubles);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
+                    iErr = St7.St7SetElementProperty(1, St7.tyBEAM, (i + 1), nProps2 + i + 1);
+                    if (Optimisation.CheckiErr(iErr)) { return; }
                 }
-                string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
-                string sExplodedFile = sBaseFile + " - exploded.st7";
-
-                status = "";
-                status2 = "";
-                status3 = "Beam properties 'exploded' and saved to: " + Environment.NewLine + sExplodedFile + Environment.NewLine;
-                updatetext();
-
-                iErr = St7.St7SaveFileTo(1, sExplodedFile);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                iErr = St7.St7CloseFile(1);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                iErr = St7.St7Release();
-                if (Optimisation.CheckiErr(iErr)) { return; }
             }
-            else
-            {
-                //this.Close();
-            }
+            string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
+            string sExplodedFile = sBaseFile + " - exploded.st7";
+
+            status = "";
+            status2 = "";
+            status3 = "Beam properties 'exploded' and saved to: " + Environment.NewLine + sExplodedFile + Environment.NewLine;
+            updatetext();
+
+            iErr = St7.St7SaveFileTo(1, sExplodedFile);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            iErr = St7.St7CloseFile(1);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            //iErr = St7.St7Release();
+            //if (Optimisation.CheckiErr(iErr)) { return; }
         }
         private void ClusterButton_Click(object sender, EventArgs e)
+        {
+            string sFile = fileBox.Text;
+
+            if (fileBox.Text == "")
+            {
+                MessageBox.Show(@"Please provide Strand7 file to operate on using the ""Browse"" button.");
+                return;
+            }
+
+            //Strand7 model properties
+            int iErr;
+            //iErr = St7.St7Init();
+            //if (Optimisation.CheckiErr(iErr)) { return; }
+            iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
+            if (Optimisation.CheckiErr(iErr)) { return; }
+
+            int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
+            iErr = St7.St7ConvertUnits(1, units);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+
+            int[] NumProperties = new int[St7.kMaxEntityTotals];
+            int[] LastProperty = new int[St7.kMaxEntityTotals];
+            iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
+            int nProps2 = LastProperty[St7.ipBeamPropTotal]; //EDIT
+            
+            int nBeams = new int();
+            iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+
+            List<int> idList = new List<int>();
+            int numIds = 0;
+            for (int i = 0; i < nBeams; i++)
+            {
+                int beamId = 0;
+                iErr = St7.St7GetBeamID(1, iErr, ref beamId);
+                if (!idList.Contains(beamId)) idList.Add(beamId);
+            }
+            //int numGroups = 0;
+            //iErr = St7.St7GetNumGroups(1, ref numGroups);
+            //Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(sFile), numGroups);
+            Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(sFile), idList);
+
+            BindingSource bs = new BindingSource();
+            List<Section> sections = new List<Section>();
+            for (int i=0;i<Optimisation.SecLib.nGroups;i++)
+            {
+                sections.AddRange(Optimisation.SecLib.GetGroup(i));
+            }
+            bs.DataSource = sections;
+            sectionDataGrid.DataSource = bs;
+
+            Beam[] beams = new Beam[nBeams];
+            Optimisation.beamProperties = new BeamProperty[nProps2];
+            Optimisation.SetupBeamsAndProperties(false, nBeams, beams);
+
+            /// ######################
+            /// ##### Clustering #####
+            /// ######################
+            string s_cluster="";
+            string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
+            Optimisation.ClusterProperties(true, true, ref s_cluster, sBaseFile);
+            status = "";
+            status2 = "";
+            status3 = s_cluster;
+            updatetext();
+
+            iErr = St7.St7CloseFile(1);
+            if (Optimisation.CheckiErr(iErr)) { return; }
+            //iErr = St7.St7Release();
+            //if (Optimisation.CheckiErr(iErr)) { return; }
+            
+        }
+        private void Browse_Click(object sender, EventArgs e)
         {
             OpenFileDialog fdlg = new OpenFileDialog();
             fdlg.Title = "Strand7 file for beam section sizing";
             fdlg.Filter = "Strand7 files (*.st7)|*.st7";
             if (fdlg.ShowDialog() == DialogResult.OK)
             {
+                List<object> args = new List<object>();
+
                 string sFile = fdlg.FileName;
-                //Strand7 model properties
-                int iErr;
-                iErr = St7.St7Init();
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                iErr = St7.St7OpenFile(1, sFile, System.IO.Path.GetTempPath());
-                if (Optimisation.CheckiErr(iErr)) { return; }
-
-                int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
-                iErr = St7.St7ConvertUnits(1, units);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-
-                int[] NumProperties = new int[St7.kMaxEntityTotals];
-                int[] LastProperty = new int[St7.kMaxEntityTotals];
-                iErr = St7.St7GetTotalProperties(1, NumProperties, LastProperty);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
-                int nProps2 = LastProperty[St7.ipBeamPropTotal]; //EDIT
-                int numGroups = 0;
-                iErr = St7.St7GetNumGroups(1, ref numGroups);
-                int nBeams = new int();
-                iErr = St7.St7GetTotal(1, St7.tyBEAM, ref nBeams);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-
-                Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(sFile), numGroups);
-
-                Beam[] beams = new Beam[nBeams];
-                Optimisation.beamProperties = new BeamProperty[nProps2];
-                Optimisation.SetupBeamsAndProperties(false, nBeams, beams);
-
-                /// ######################
-                /// ##### Clustering #####
-                /// ######################
-                string s_cluster="";
-                string sBaseFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sFile), System.IO.Path.GetFileNameWithoutExtension(sFile));
-                Optimisation.ClusterProperties(true, true, ref s_cluster, sBaseFile);
-                status = "";
-                status2 = "";
-                status3 = s_cluster;
-                updatetext();
-
-                iErr = St7.St7CloseFile(1);
-                if (Optimisation.CheckiErr(iErr)) { return; }
-                iErr = St7.St7Release();
-                if (Optimisation.CheckiErr(iErr)) { return; }
+                fileBox.Text = sFile;
             }
         }
     }

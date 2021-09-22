@@ -58,8 +58,8 @@ namespace Strand7_Steel_Section_Sizing
 
             //Strand7 model properties
             int iErr;
-            iErr = St7.St7Init();
-            if (CheckiErr(iErr)) { return; }
+            //iErr = St7.St7Init();
+            //if (CheckiErr(iErr)) { return; }
             iErr = St7.St7OpenFile(1, file, System.IO.Path.GetTempPath());
             if (CheckiErr(iErr)) { return; }
             int nBeams = new int();
@@ -74,12 +74,25 @@ namespace Strand7_Steel_Section_Sizing
             if (CheckiErr(iErr)) { return; }
             int nProps = NumProperties[St7.ipBeamPropTotal]; //EDIT
             nProps2 = LastProperty[St7.ipBeamPropTotal]; //EDIT
-            int numGroups = 0;
-            iErr = St7.St7GetNumGroups(1, ref numGroups);
+
+            // convert units
             int[] units = new int[] { St7.luMETRE, St7.fuNEWTON, St7.suMEGAPASCAL, St7.muKILOGRAM, St7.tuCELSIUS, St7.euJOULE };
             iErr = St7.St7ConvertUnits(1, units);
             if (CheckiErr(iErr)) { return; }
-            CollectCSVSections(System.IO.Path.GetDirectoryName(file), numGroups);
+
+            // collect sections from CSV files
+            //int numGroups = 0;
+            //iErr = St7.St7GetNumGroups(1, ref numGroups);
+            //Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(file), numGroups);
+            List<int> idList = new List<int>();
+            int numIds = 0;
+            for (int i = 1; i <= nBeams; i++)
+            {
+                int beamId = 0;
+                iErr = St7.St7GetBeamID(1, i, ref beamId);
+                if (!idList.Contains(beamId) && beamId > 0) idList.Add(beamId);
+            }
+            Optimisation.CollectCSVSections(System.IO.Path.GetDirectoryName(file), idList);
 
             if (nProps2 < 1)
             {
@@ -295,8 +308,8 @@ namespace Strand7_Steel_Section_Sizing
                             if (CheckiErr(iErr)) { return; };
                             iErr = St7.St7CloseFile(1);
                             if (CheckiErr(iErr)) { return; };
-                            iErr = St7.St7Release();
-                            if (CheckiErr(iErr)) { return; };
+                            //iErr = St7.St7Release();
+                            //if (CheckiErr(iErr)) { return; };
                             e.Cancel = true;
                             return;
                         }
@@ -368,8 +381,8 @@ namespace Strand7_Steel_Section_Sizing
                                 if (CheckiErr(iErr)) { return; }
                                 iErr = St7.St7CloseFile(1);
                                 if (CheckiErr(iErr)) { return; }
-                                iErr = St7.St7Release();
-                                if (CheckiErr(iErr)) { return; }
+                                //iErr = St7.St7Release();
+                                //if (CheckiErr(iErr)) { return; }
                                 e.Cancel = true;
                                 return;
                             }
@@ -460,8 +473,8 @@ namespace Strand7_Steel_Section_Sizing
                             {
                                 iErr = St7.St7CloseFile(1);
                                 if (CheckiErr(iErr)) { return; };
-                                iErr = St7.St7Release();
-                                if (CheckiErr(iErr)) { return; };
+                                //iErr = St7.St7Release();
+                                //if (CheckiErr(iErr)) { return; };
                                 e.Cancel = true;
                                 return;
                             }
@@ -583,8 +596,8 @@ namespace Strand7_Steel_Section_Sizing
                                 {
                                     iErr = St7.St7CloseFile(1);
                                     if (CheckiErr(iErr)) { return; };
-                                    iErr = St7.St7Release();
-                                    if (CheckiErr(iErr)) { return; };
+                                    //iErr = St7.St7Release();
+                                    //if (CheckiErr(iErr)) { return; };
                                 }
                             }
 
@@ -680,8 +693,8 @@ namespace Strand7_Steel_Section_Sizing
             if (CheckiErr(iErr)) { return; }
             iErr = St7.St7CloseFile(1);
             if (CheckiErr(iErr)) { return; }
-            iErr = St7.St7Release();
-            if (CheckiErr(iErr)) { return; }
+            //iErr = St7.St7Release();
+            //if (CheckiErr(iErr)) { return; }
 
             stat = "complete";
             stat2 = "";
@@ -905,7 +918,7 @@ namespace Strand7_Steel_Section_Sizing
                     b.M_11_stress = 0;
                     b.M_22_stress = 0;
                 }
-                if (iter_stress > 3) { DampingDown = 0.0; }
+                if (iter_stress > 13) { DampingDown = 0.0; }
                 int changes_stress = 0;
                 stress_satisfied = true;
                 overstressed_beams.Clear();
@@ -1415,7 +1428,8 @@ namespace Strand7_Steel_Section_Sizing
                 if (CheckiErr(iErr)) { return; };
 
                 int group = 0;
-                iErr = St7.St7GetElementGroup(1, St7.tyBEAM, b.Number, ref group);
+                //iErr = St7.St7GetElementGroup(1, St7.tyBEAM, b.Number, ref group);
+                iErr = St7.St7GetBeamID(1, b.Number, ref group);
                 if (CheckiErr(iErr)) { return; };
 
                 b.PropertyNum = propNum;
@@ -1428,11 +1442,11 @@ namespace Strand7_Steel_Section_Sizing
                     if (p == null)
                     {
                         p = new BeamProperty(propNum, SecLib);
-                        p.Group = group - 2;
+                        p.Group = group;
                     }
                     else
                     {
-                        if (p.Group != group - 2)
+                        if (p.Group != group)
                         {
                             MessageBox.Show("Some beams of a given property have different group numbers");
                             throw new Exception("Some beams of a given property have different group numbers.");
@@ -1440,7 +1454,7 @@ namespace Strand7_Steel_Section_Sizing
                         }
                     }
                     p.Beams.Add(b);
-                    if (p.Group > -1) { p.Optimise = true; p.CurrentSectionInt = 0; }
+                    if (p.Group > 0) { p.Optimise = true; p.CurrentSectionInt = 0; }
                     beamProperties[propNum - 1] = p;
                 }
                 else
@@ -1494,6 +1508,7 @@ namespace Strand7_Steel_Section_Sizing
                 }
             }
         }
+        //not in use:
         public static void CollectCSVSections(string sFolder, int numGroups)
         {
             for (int g = 0; g < numGroups-1; g++)
@@ -1534,6 +1549,52 @@ namespace Strand7_Steel_Section_Sizing
                 }
 
                 if (SecLib.GetGroup(g).Count == 0)
+                {
+                    MessageBox.Show("No section properties found.");
+                    return;
+                }
+            }
+        }
+        public static void CollectCSVSections(string sFolder, List<int> idList)
+        {
+            foreach (int id in idList)
+            {
+                int iErr;
+                string filePath = System.IO.Path.Combine(sFolder, "Section_CSV" + (id).ToString() + ".txt");
+                if (!System.IO.File.Exists(filePath))
+                {
+                    MessageBox.Show("section data file does not exist");
+                    throw new Exception("section data file does not exist.");
+                    return;
+                }
+
+                using (var fs = System.IO.File.OpenRead(filePath))
+                using (var reader = new System.IO.StreamReader(fs))
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        var line = reader.ReadLine();
+                        var values = line.Split(',');
+
+                        double d1 = Convert.ToDouble(values[0]) / 1e3;
+                        double d2 = Convert.ToDouble(values[1]) / 1e3;
+                        double d3 = Convert.ToDouble(values[2]) / 1e3;
+                        double t1 = Convert.ToDouble(values[3]) / 1e3;
+                        double t2 = Convert.ToDouble(values[4]) / 1e3;
+                        double t3 = Convert.ToDouble(values[5]) / 1e3;
+                        double a = Convert.ToDouble(values[6]) / 1e6;
+                        double z11 = Convert.ToDouble(values[7]) / 1e9;
+                        double z22 = Convert.ToDouble(values[8]) / 1e9;
+                        int stype = Convert.ToInt32(values[9]);
+                        double i11 = Convert.ToDouble(values[10]) / 1e12;
+                        double i22 = Convert.ToDouble(values[11]) / 1e12;
+
+                        Section s = new Section(d1, d2, d3, t1, t2, t3, a, z11, z22, stype, i11, i22, id);
+                        SecLib.AddSection(s, id);
+                    }
+                }
+
+                if (SecLib.GetGroup(id).Count == 0)
                 {
                     MessageBox.Show("No section properties found.");
                     return;
@@ -1688,10 +1749,10 @@ namespace Strand7_Steel_Section_Sizing
                 string sFilePath = System.IO.Path.GetTempPath() + "API Error Log.txt";
                 System.IO.File.WriteAllText(sFilePath, errorstring);
 
-                throw new Exception(errorstring);
-
                 St7.St7CloseFile(1);
                 St7.St7Release();
+
+                throw new Exception(errorstring);
 
                 return true;
             }
@@ -1701,7 +1762,7 @@ namespace Strand7_Steel_Section_Sizing
 
         #region variables
         private static bool useExisting;
-        private static SectionLibrary SecLib = new SectionLibrary();
+        public static SectionLibrary SecLib = new SectionLibrary();
         private static Beam[] beams;
         private static bool needsSolving = true;
         private static int maxDeflectionChanges;

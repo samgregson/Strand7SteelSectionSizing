@@ -46,14 +46,8 @@
             this.StressCaseBox = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.deflectionGrid = new System.Windows.Forms.DataGridView();
-            this.deflectionDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DeflectionNode = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.LoadCases = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.referenceNodeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.xDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.yDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.zDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.deflectionLimitBindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.DeflectionQM = new System.Windows.Forms.PictureBox();
             this.Def_checkbox = new System.Windows.Forms.CheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -73,13 +67,24 @@
             this.Combine_checkbox = new System.Windows.Forms.CheckBox();
             this.ExplodeButton = new System.Windows.Forms.Button();
             this.ClusterButton = new System.Windows.Forms.Button();
-            this.deflectionLimitBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.useExisting = new System.Windows.Forms.CheckBox();
+            this.button1 = new System.Windows.Forms.Button();
+            this.fileBox = new System.Windows.Forms.TextBox();
+            this.tabControl = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.sectionDataGrid = new System.Windows.Forms.DataGridView();
+            this.deflectionDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.referenceNodeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.xDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.yDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.zDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.deflectionLimitBindingSource1 = new System.Windows.Forms.BindingSource(this.components);
+            this.deflectionLimitBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.StressQM)).BeginInit();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.deflectionGrid)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DeflectionQM)).BeginInit();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PropertiesQM)).BeginInit();
@@ -87,13 +92,18 @@
             ((System.ComponentModel.ISupportInitialize)(this.ExplodeQM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CombineQM)).BeginInit();
             this.groupBox4.SuspendLayout();
+            this.tabControl.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.sectionDataGrid)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 502);
+            this.label1.Location = new System.Drawing.Point(360, 563);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(19, 13);
@@ -103,7 +113,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(13, 523);
+            this.label2.Location = new System.Drawing.Point(360, 589);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(19, 13);
@@ -118,10 +128,10 @@
             // CancelButton
             // 
             this.CancelButton.AutoSize = true;
-            this.CancelButton.Location = new System.Drawing.Point(758, 523);
+            this.CancelButton.Location = new System.Drawing.Point(93, 584);
             this.CancelButton.Margin = new System.Windows.Forms.Padding(2);
             this.CancelButton.Name = "CancelButton";
-            this.CancelButton.Size = new System.Drawing.Size(61, 23);
+            this.CancelButton.Size = new System.Drawing.Size(75, 23);
             this.CancelButton.TabIndex = 11;
             this.CancelButton.Text = "Cancel";
             this.CancelButton.UseVisualStyleBackColor = true;
@@ -130,14 +140,14 @@
             // BrowseButton
             // 
             this.BrowseButton.AutoSize = true;
-            this.BrowseButton.Location = new System.Drawing.Point(627, 523);
+            this.BrowseButton.Location = new System.Drawing.Point(14, 584);
             this.BrowseButton.Margin = new System.Windows.Forms.Padding(2);
             this.BrowseButton.Name = "BrowseButton";
-            this.BrowseButton.Size = new System.Drawing.Size(127, 23);
+            this.BrowseButton.Size = new System.Drawing.Size(75, 23);
             this.BrowseButton.TabIndex = 10;
-            this.BrowseButton.Text = "Select file and optimise";
+            this.BrowseButton.Text = "Optimise";
             this.BrowseButton.UseVisualStyleBackColor = true;
-            this.BrowseButton.Click += new System.EventHandler(this.Browse_Click);
+            this.BrowseButton.Click += new System.EventHandler(this.Optimise_Click);
             // 
             // label4
             // 
@@ -182,7 +192,7 @@
             this.groupBox1.Controls.Add(this.Stress_checkbox);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.StressCaseBox);
-            this.groupBox1.Location = new System.Drawing.Point(12, 102);
+            this.groupBox1.Location = new System.Drawing.Point(12, 69);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(345, 76);
             this.groupBox1.TabIndex = 16;
@@ -242,7 +252,7 @@
             this.groupBox2.Controls.Add(this.deflectionGrid);
             this.groupBox2.Controls.Add(this.DeflectionQM);
             this.groupBox2.Controls.Add(this.Def_checkbox);
-            this.groupBox2.Location = new System.Drawing.Point(12, 184);
+            this.groupBox2.Location = new System.Drawing.Point(12, 151);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(345, 226);
             this.groupBox2.TabIndex = 17;
@@ -271,14 +281,6 @@
             this.deflectionGrid.Size = new System.Drawing.Size(333, 181);
             this.deflectionGrid.TabIndex = 29;
             // 
-            // deflectionDataGridViewTextBoxColumn
-            // 
-            this.deflectionDataGridViewTextBoxColumn.DataPropertyName = "Deflection";
-            this.deflectionDataGridViewTextBoxColumn.FillWeight = 144.9814F;
-            this.deflectionDataGridViewTextBoxColumn.HeaderText = "Deflection [mm]";
-            this.deflectionDataGridViewTextBoxColumn.Name = "deflectionDataGridViewTextBoxColumn";
-            this.deflectionDataGridViewTextBoxColumn.Width = 60;
-            // 
             // DeflectionNode
             // 
             this.DeflectionNode.DataPropertyName = "DeflectionNodesInput";
@@ -292,42 +294,6 @@
             this.LoadCases.HeaderText = "Load Case(s)";
             this.LoadCases.Name = "LoadCases";
             this.LoadCases.Width = 60;
-            // 
-            // referenceNodeDataGridViewTextBoxColumn
-            // 
-            this.referenceNodeDataGridViewTextBoxColumn.DataPropertyName = "ReferenceNode";
-            this.referenceNodeDataGridViewTextBoxColumn.FillWeight = 138.5273F;
-            this.referenceNodeDataGridViewTextBoxColumn.HeaderText = "Reference Node";
-            this.referenceNodeDataGridViewTextBoxColumn.Name = "referenceNodeDataGridViewTextBoxColumn";
-            this.referenceNodeDataGridViewTextBoxColumn.Width = 60;
-            // 
-            // xDataGridViewCheckBoxColumn
-            // 
-            this.xDataGridViewCheckBoxColumn.DataPropertyName = "X";
-            this.xDataGridViewCheckBoxColumn.FillWeight = 52.35317F;
-            this.xDataGridViewCheckBoxColumn.HeaderText = "X";
-            this.xDataGridViewCheckBoxColumn.Name = "xDataGridViewCheckBoxColumn";
-            this.xDataGridViewCheckBoxColumn.Width = 23;
-            // 
-            // yDataGridViewCheckBoxColumn
-            // 
-            this.yDataGridViewCheckBoxColumn.DataPropertyName = "Y";
-            this.yDataGridViewCheckBoxColumn.FillWeight = 59.43535F;
-            this.yDataGridViewCheckBoxColumn.HeaderText = "Y";
-            this.yDataGridViewCheckBoxColumn.Name = "yDataGridViewCheckBoxColumn";
-            this.yDataGridViewCheckBoxColumn.Width = 23;
-            // 
-            // zDataGridViewCheckBoxColumn
-            // 
-            this.zDataGridViewCheckBoxColumn.DataPropertyName = "Z";
-            this.zDataGridViewCheckBoxColumn.FillWeight = 65.85933F;
-            this.zDataGridViewCheckBoxColumn.HeaderText = "Z";
-            this.zDataGridViewCheckBoxColumn.Name = "zDataGridViewCheckBoxColumn";
-            this.zDataGridViewCheckBoxColumn.Width = 23;
-            // 
-            // deflectionLimitBindingSource1
-            // 
-            this.deflectionLimitBindingSource1.DataSource = typeof(Strand7_Steel_Section_Sizing.DeflectionLimit);
             // 
             // DeflectionQM
             // 
@@ -358,7 +324,7 @@
             this.groupBox3.Controls.Add(this.PropertiesQM);
             this.groupBox3.Controls.Add(this.Button_LSA);
             this.groupBox3.Controls.Add(this.Button_NLA);
-            this.groupBox3.Location = new System.Drawing.Point(11, 45);
+            this.groupBox3.Location = new System.Drawing.Point(11, 12);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(346, 51);
             this.groupBox3.TabIndex = 18;
@@ -378,12 +344,12 @@
             // outputBox
             // 
             this.outputBox.BackColor = System.Drawing.SystemColors.Window;
-            this.outputBox.Location = new System.Drawing.Point(363, 12);
+            this.outputBox.Location = new System.Drawing.Point(0, 0);
             this.outputBox.Multiline = true;
             this.outputBox.Name = "outputBox";
             this.outputBox.ReadOnly = true;
             this.outputBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.outputBox.Size = new System.Drawing.Size(456, 483);
+            this.outputBox.Size = new System.Drawing.Size(445, 522);
             this.outputBox.TabIndex = 12;
             this.outputBox.TabStop = false;
             this.outputBox.WordWrap = false;
@@ -408,7 +374,7 @@
             // ExplodeQM
             // 
             this.ExplodeQM.Image = ((System.Drawing.Image)(resources.GetObject("ExplodeQM.Image")));
-            this.ExplodeQM.Location = new System.Drawing.Point(134, 16);
+            this.ExplodeQM.Location = new System.Drawing.Point(137, 504);
             this.ExplodeQM.Name = "ExplodeQM";
             this.ExplodeQM.Size = new System.Drawing.Size(12, 12);
             this.ExplodeQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -419,7 +385,7 @@
             // CombineQM
             // 
             this.CombineQM.Image = ((System.Drawing.Image)(resources.GetObject("CombineQM.Image")));
-            this.CombineQM.Location = new System.Drawing.Point(782, 503);
+            this.CombineQM.Location = new System.Drawing.Point(336, 563);
             this.CombineQM.Name = "CombineQM";
             this.CombineQM.Size = new System.Drawing.Size(12, 12);
             this.CombineQM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -435,7 +401,7 @@
             this.groupBox4.Controls.Add(this.Freq_checkbox);
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.FreqLimitBox);
-            this.groupBox4.Location = new System.Drawing.Point(11, 416);
+            this.groupBox4.Location = new System.Drawing.Point(11, 383);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(346, 79);
             this.groupBox4.TabIndex = 24;
@@ -497,7 +463,7 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(14, 372);
+            this.label10.Location = new System.Drawing.Point(14, 339);
             this.label10.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(0, 13);
@@ -508,7 +474,7 @@
             this.Combine_checkbox.AutoSize = true;
             this.Combine_checkbox.Checked = global::Strand7_Steel_Section_Sizing.Properties.Settings.Default.combine;
             this.Combine_checkbox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.Combine_checkbox.Location = new System.Drawing.Point(627, 501);
+            this.Combine_checkbox.Location = new System.Drawing.Point(181, 561);
             this.Combine_checkbox.Name = "Combine_checkbox";
             this.Combine_checkbox.Size = new System.Drawing.Size(149, 17);
             this.Combine_checkbox.TabIndex = 25;
@@ -517,7 +483,7 @@
             // 
             // ExplodeButton
             // 
-            this.ExplodeButton.Location = new System.Drawing.Point(12, 16);
+            this.ExplodeButton.Location = new System.Drawing.Point(15, 504);
             this.ExplodeButton.Name = "ExplodeButton";
             this.ExplodeButton.Size = new System.Drawing.Size(116, 23);
             this.ExplodeButton.TabIndex = 26;
@@ -527,7 +493,7 @@
             // 
             // ClusterButton
             // 
-            this.ClusterButton.Location = new System.Drawing.Point(282, 16);
+            this.ClusterButton.Location = new System.Drawing.Point(15, 533);
             this.ClusterButton.Name = "ClusterButton";
             this.ClusterButton.Size = new System.Drawing.Size(75, 23);
             this.ClusterButton.TabIndex = 28;
@@ -535,26 +501,132 @@
             this.ClusterButton.UseVisualStyleBackColor = true;
             this.ClusterButton.Click += new System.EventHandler(this.ClusterButton_Click);
             // 
-            // deflectionLimitBindingSource
-            // 
-            this.deflectionLimitBindingSource.DataSource = typeof(Strand7_Steel_Section_Sizing.DeflectionLimit);
-            // 
             // useExisting
             // 
             this.useExisting.AutoSize = true;
-            this.useExisting.Location = new System.Drawing.Point(363, 502);
+            this.useExisting.Location = new System.Drawing.Point(15, 562);
             this.useExisting.Name = "useExisting";
             this.useExisting.Size = new System.Drawing.Size(160, 17);
             this.useExisting.TabIndex = 29;
             this.useExisting.Text = "Use existing sections at start";
             this.useExisting.UseVisualStyleBackColor = true;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(276, 476);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 30;
+            this.button1.Text = "Browse";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.Browse_Click);
+            // 
+            // fileBox
+            // 
+            this.fileBox.Location = new System.Drawing.Point(15, 478);
+            this.fileBox.Name = "fileBox";
+            this.fileBox.ReadOnly = true;
+            this.fileBox.Size = new System.Drawing.Size(255, 20);
+            this.fileBox.TabIndex = 31;
+            // 
+            // tabControl
+            // 
+            this.tabControl.Controls.Add(this.tabPage1);
+            this.tabControl.Controls.Add(this.tabPage2);
+            this.tabControl.Location = new System.Drawing.Point(363, 12);
+            this.tabControl.Name = "tabControl";
+            this.tabControl.SelectedIndex = 0;
+            this.tabControl.Size = new System.Drawing.Size(456, 544);
+            this.tabControl.TabIndex = 32;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.outputBox);
+            this.tabPage1.Location = new System.Drawing.Point(4, 22);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(448, 518);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "Output";
+            this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.sectionDataGrid);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(448, 518);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Sections";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // sectionDataGrid
+            // 
+            this.sectionDataGrid.BackgroundColor = System.Drawing.SystemColors.Control;
+            this.sectionDataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.sectionDataGrid.Location = new System.Drawing.Point(0, 0);
+            this.sectionDataGrid.Name = "sectionDataGrid";
+            this.sectionDataGrid.Size = new System.Drawing.Size(448, 518);
+            this.sectionDataGrid.TabIndex = 0;
+            // 
+            // deflectionDataGridViewTextBoxColumn
+            // 
+            this.deflectionDataGridViewTextBoxColumn.DataPropertyName = "Deflection";
+            this.deflectionDataGridViewTextBoxColumn.FillWeight = 144.9814F;
+            this.deflectionDataGridViewTextBoxColumn.HeaderText = "Deflection [mm]";
+            this.deflectionDataGridViewTextBoxColumn.Name = "deflectionDataGridViewTextBoxColumn";
+            this.deflectionDataGridViewTextBoxColumn.Width = 60;
+            // 
+            // referenceNodeDataGridViewTextBoxColumn
+            // 
+            this.referenceNodeDataGridViewTextBoxColumn.DataPropertyName = "ReferenceNode";
+            this.referenceNodeDataGridViewTextBoxColumn.FillWeight = 138.5273F;
+            this.referenceNodeDataGridViewTextBoxColumn.HeaderText = "Reference Node";
+            this.referenceNodeDataGridViewTextBoxColumn.Name = "referenceNodeDataGridViewTextBoxColumn";
+            this.referenceNodeDataGridViewTextBoxColumn.Width = 60;
+            // 
+            // xDataGridViewCheckBoxColumn
+            // 
+            this.xDataGridViewCheckBoxColumn.DataPropertyName = "X";
+            this.xDataGridViewCheckBoxColumn.FillWeight = 52.35317F;
+            this.xDataGridViewCheckBoxColumn.HeaderText = "X";
+            this.xDataGridViewCheckBoxColumn.Name = "xDataGridViewCheckBoxColumn";
+            this.xDataGridViewCheckBoxColumn.Width = 23;
+            // 
+            // yDataGridViewCheckBoxColumn
+            // 
+            this.yDataGridViewCheckBoxColumn.DataPropertyName = "Y";
+            this.yDataGridViewCheckBoxColumn.FillWeight = 59.43535F;
+            this.yDataGridViewCheckBoxColumn.HeaderText = "Y";
+            this.yDataGridViewCheckBoxColumn.Name = "yDataGridViewCheckBoxColumn";
+            this.yDataGridViewCheckBoxColumn.Width = 23;
+            // 
+            // zDataGridViewCheckBoxColumn
+            // 
+            this.zDataGridViewCheckBoxColumn.DataPropertyName = "Z";
+            this.zDataGridViewCheckBoxColumn.FillWeight = 65.85933F;
+            this.zDataGridViewCheckBoxColumn.HeaderText = "Z";
+            this.zDataGridViewCheckBoxColumn.Name = "zDataGridViewCheckBoxColumn";
+            this.zDataGridViewCheckBoxColumn.Width = 23;
+            // 
+            // deflectionLimitBindingSource1
+            // 
+            this.deflectionLimitBindingSource1.DataSource = typeof(Strand7_Steel_Section_Sizing.DeflectionLimit);
+            // 
+            // deflectionLimitBindingSource
+            // 
+            this.deflectionLimitBindingSource.DataSource = typeof(Strand7_Steel_Section_Sizing.DeflectionLimit);
+            // 
             // Form1
             // 
             this.AcceptButton = this.BrowseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(831, 556);
+            this.ClientSize = new System.Drawing.Size(831, 616);
+            this.Controls.Add(this.tabControl);
+            this.Controls.Add(this.fileBox);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.useExisting);
             this.Controls.Add(this.ClusterButton);
             this.Controls.Add(this.CombineQM);
@@ -563,7 +635,6 @@
             this.Controls.Add(this.Combine_checkbox);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.label10);
-            this.Controls.Add(this.outputBox);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -583,7 +654,6 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.deflectionGrid)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DeflectionQM)).EndInit();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
@@ -593,6 +663,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.CombineQM)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
+            this.tabControl.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            this.tabPage1.PerformLayout();
+            this.tabPage2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.sectionDataGrid)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.deflectionLimitBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -647,6 +723,12 @@
         private System.Windows.Forms.DataGridViewCheckBoxColumn yDataGridViewCheckBoxColumn;
         private System.Windows.Forms.DataGridViewCheckBoxColumn zDataGridViewCheckBoxColumn;
         private System.Windows.Forms.CheckBox useExisting;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox fileBox;
+        private System.Windows.Forms.TabControl tabControl;
+        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.DataGridView sectionDataGrid;
     }
 }
 

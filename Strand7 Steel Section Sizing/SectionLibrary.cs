@@ -10,6 +10,15 @@ using System.Threading.Tasks;
 
 namespace Strand7_Steel_Section_Sizing
 {
+    /// <summary>
+    /// Indicates that a property or field can be exported.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = false)]
+    public class ExportAttribute : Attribute
+    {
+        public ExportAttribute() { }
+    }
+
     [Serializable]
     class Section
     {
@@ -82,6 +91,7 @@ namespace Strand7_Steel_Section_Sizing
     [Serializable]
     class Beam
     {
+        [Export]
         public int Number { get; set; }
         public int PropertyNum { get; set; }
         public double A_x_stress_max { get; set; }
